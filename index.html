@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ON/OFF Logger with Firebase</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    button { font-size: 18px; padding: 10px 25px; margin: 10px; border: none; border-radius: 10px; cursor: pointer; }
+    .on { background-color: green; color: white; }
+    .off { background-color: red; color: white; }
+    .download { background-color: blue; color: white; }
+    #status { font-size: 24px; margin: 20px; }
+    #loading { display: none; font-size: 20px; color: green; }
+  </style>
+</head>
+<body>
+
+<h1>Current Status: <span id="status">Loading...</span></h1>
+<button id="onButton" class="on">ON</button>
+<button id="offButton" class="off">OFF</button>
+<br><br>
+<button id="downloadButton" class="download">Download Logs (Excel)</button>
+<p id="loading">Downloading...</p>
+
+<table id="logTable" border="1" style="margin: 30px auto; border-collapse: collapse;">
+  <thead>
+    <tr><th>Timestamp</th><th>Action</th></tr>
+  </thead>
+  <tbody>
+    <!-- Logs will appear here -->
+  </tbody>
+</table>
+
+<script>
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyAy53-F5QZ5a0f9DW9emesit1KA2T7v7Do",
+    authDomain: "testt-b241d.firebaseapp.com",
+    projectId: "testt-b241d",
+    storageBucket: "testt-b241d.appspot.com",
+    messagingSenderId: "288476078303",
+    appId: "1:288476078303:android:ff06d4a9d5c432f41ac96a"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const statusDoc = db.collection('status').doc('buttonState');
+  const logsCol = db.collection('logs');
+
+  const statusText = document.getElementById('status');
+  const onBtn = document.getElementById('onButton');
+  const offBtn = document.getElementById('offButton');
+  const downloadBtn = document.getElementById('downloadButton');
+  const loadingText = document.getElementById('loading');
+  const logTable = document.getElementById('logTable').querySelector('tbody');
+
+  onBtn.onclick = async () => {
+    const now = new Date().toISOString();
+    await statusDoc.set({ currentStatus: "ON", f_on: now, f_off: null });
+    await logsCol.add({ action: "ON", timestamp: now });
+    updateUI('ON');
+    fetchLogs();
+  };
+
+  offBtn.onclick = async () => {
+    const now = new Date().toISOString();
+    await statusDoc.set({ currentStatus: "OFF", f_on: null, f_off: now });
+    await logsCol.add({ action: "OFF", timestamp: now });
+    updateUI('OFF');
+    fetchLogs();
+  };
+
+  async function fetchStatus() {
+    const doc = await statusDoc.get();
+    if (doc.exists) {
+      const data = doc.data();
+      updateUI(data.currentStatus);
+    } else {
+      statusText.textContent = 'Unknown';
+    }
+  }
+
+  function updateUI(state) {
+    if (state === "ON") {
+      statusText.textContent = "ON";
+      onBtn.disabled = true;
+      offBtn.disabled = false;
+    } else if (state === "OFF") {
+      statusText.textContent = "OFF";
+      onBtn.disabled = false;
+      offBtn.disabled = true;
+    }
+  }
+
+  async function fetchLogs() {
+    const snapshot = await logsCol.orderBy('timestamp', 'desc').limit(50).get();
+    logTable.innerHTML = '';
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const row = `<tr><td>${data.timestamp ? new Date(data.timestamp).toLocaleString() : "No time"}</td><td>${data.action || "Unknown"}</td></tr>`;
+      logTable.innerHTML += row;
+    });
+  }
+
+  downloadBtn.onclick = async () => {
+    loadingText.style.display = 'block'; // Show loading message
+    try {
+      const snapshot = await logsCol.orderBy('timestamp').get();
+      if (snapshot.empty) {
+        alert('No logs available to download.');
+        loadingText.style.display = 'none'; // Hide loading message
+        return;
+      }
+
+      const data = snapshot.docs.map(doc => {
+        const docData = doc.data();
+        return {
+          Timestamp: docData.timestamp ? new Date(docData.timestamp).toLocaleString() : "No timestamp",
+          Action: docData.action || "Unknown"
+        };
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
+      XLSX.writeFile(workbook, "logs.xlsx");
+    } catch (error) {
+      console.error('Error downloading logs:', error);
+      alert('Error downloading logs. See console for details.');
+    } finally {
+      loadingText.style.display = 'none'; // Hide loading message
+    }
+  };
+
+  // Initialize on load
+  fetchStatus();
+  fetchLogs();
+</script>
+
+</body>
+</html>
