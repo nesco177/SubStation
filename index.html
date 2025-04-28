@@ -19,23 +19,93 @@
       margin: 0;
       color: #333;
     }
-    button {
-      font-size: 18px;
-      padding: 12px 30px;
-      margin: 15px;
-      border: none;
-      border-radius: 25px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    .on {
-      background: linear-gradient(145deg, #4caf50, #45a049);
-      color: white;
-    }
-    .off {
-      background: linear-gradient(145deg, #f44336, #e53935);
-      color: white;
-    }
+
+/* General button styling */
+button {
+  font-size: 18px;
+  padding: 14px 36px;
+  margin: 15px;
+  border: none;
+  border-radius: 50px; /* Rounded corners for modern appearance */
+  cursor: pointer;
+  font-weight: bold;
+  position: relative;
+  background: #ffffff; /* Start with a clean white background */
+  transition: transform 0.3s ease, background 0.5s ease, color 0.4s ease;
+  color: #333;/* Default text color */
+ user-select: none;
+  
+}
+
+/* ON button design */
+.on {
+  background: linear-gradient(145deg, #4caf50, #45a049); /* Fresh green gradient */
+  color: white;
+}
+
+/* OFF button design */
+.off {
+  background: linear-gradient(145deg, #f44336, #e53935); /* Bold red gradient */
+  color: white;
+}
+
+/* Hover effect */
+button:hover {
+  transform: scale(1.08); /* Slight enlargement */
+  transition: transform 0.3s ease;
+}
+
+/* Focus effect */
+button:focus {
+  outline: none;
+}
+
+/* Active button animation (click effect) */
+button:active {
+  transform: scale(0.95); /* Slight shrink for button press */
+}
+
+/* ON button active effect */
+.on:active {
+  background: linear-gradient(145deg, #45a049, #4caf50); /* Color shift for ON */
+}
+
+/* OFF button active effect */
+.off:active {
+  background: linear-gradient(145deg, #e53935, #f44336); /* Color shift for OFF */
+}
+
+/* Smooth pulse animation on active state (ON and OFF button) */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Apply pulse animation when ON button is active */
+.on:active {
+  animation: pulse 0.8s ease-out; /* Subtle pulse on press */
+}
+
+/* Apply pulse animation when OFF button is active */
+.off:active {
+  animation: pulse 0.8s ease-out; /* Subtle pulse on press */
+}
+
+/* Disabled button appearance */
+button:disabled {
+  background: #ddd; /* Disabled state background */
+  color: #aaa; /* Disabled state text color */
+  cursor: not-allowed;
+}
+
+    
     .download {
       background: linear-gradient(145deg, #2196f3, #1976d2);
       color: white;
@@ -276,25 +346,39 @@
     });
   }
 
-  async function updateLastInterruption(logsCol, lastInterruptionDoc, location, lastDiv) {
-    const snapshot = await logsCol.orderBy('timestamp', 'desc').limit(2).get();
-    const logs = snapshot.docs.map(doc => doc.data());
-    if (logs.length === 2 && logs[0].action === "ON" && logs[1].action === "OFF") {
-      const onTime = new Date(logs[0].timestamp);
-      const offTime = new Date(logs[1].timestamp);
-      const diffMs = onTime - offTime;
-      const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
-      const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
-      const s = String(Math.floor((diffMs % 60000) / 1000)).padStart(2, '0');
-      const time = onTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const result = `Last Interruption: ${h}:${m}:${s} at ${time}`;
-      await lastInterruptionDoc.set({ text: result });
-      lastDiv.textContent = result;
-      lastDiv.style.opacity = '0';
-      setTimeout(() => { lastDiv.style.opacity = '1'; }, 100);
-    }
-  }
+async function updateLastInterruption(logsCol, lastInterruptionDoc, location, lastDiv) {
+  const snapshot = await logsCol.orderBy('timestamp', 'desc').limit(2).get();
+  const logs = snapshot.docs.map(doc => doc.data());
+  if (logs.length === 2 && logs[0].action === "ON" && logs[1].action === "OFF") {
+    const onTime = new Date(logs[0].timestamp);
+    const offTime = new Date(logs[1].timestamp);
+    const diffMs = onTime - offTime;
+    const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
+    const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
+    const s = String(Math.floor((diffMs % 60000) / 1000)).padStart(2, '0');
 
+    const optionsTime = { hour: '2-digit', minute: '2-digit', hour12: true };
+    const optionsDate = { year: 'numeric', month: 'long', day: 'numeric' };
+
+    const timeStr = onTime.toLocaleTimeString([], optionsTime).replace('am', 'AM').replace('pm', 'PM');
+    const dateStr = onTime.toLocaleDateString([], optionsDate);
+
+    const mainText = `Last Interruption: ${h}:${m}:${s} at ${timeStr}`;
+    const subText = `${dateStr}`;
+
+    await lastInterruptionDoc.set({ mainText, subText });
+
+    lastDiv.innerHTML = `
+      <div>${mainText}</div>
+      <div style="font-size: 20px; color: #e57373; margin-top: 10px;">${subText}</div>
+    `;
+    lastDiv.style.opacity = '0';
+    setTimeout(() => { lastDiv.style.opacity = '1'; }, 100);
+  }
+}
+
+
+    
   async function fetchCurrentStatus(statusDoc, button, timerElement, onBtn, offBtn, location) {
     const doc = await statusDoc.get();
     if (doc.exists) {
@@ -308,11 +392,20 @@
   }
 
   async function fetchLastInterruption(lastInterruptionDoc, lastDiv) {
-    const doc = await lastInterruptionDoc.get();
-    if (doc.exists) {
-      lastDiv.textContent = doc.data().text || "Last Interruption: --";
+  const doc = await lastInterruptionDoc.get();
+  if (doc.exists) {
+    const data = doc.data();
+    if (data.mainText && data.subText) {
+      lastDiv.innerHTML = `
+        <div>${data.mainText}</div>
+        <div style="font-size: 16px; color: #e57373; margin-top: 5px;">${data.subText}</div>
+      `;
+    } else {
+      lastDiv.textContent = "Last Interruption: --";
     }
   }
+}
+
 
   // Button actions
   onBtn.onclick = () => handleButtonClick(statusDoc, logsCol, "Sultanabad", statusButton, timerDiv, onBtn, offBtn, lastInterruptionDoc, true);
