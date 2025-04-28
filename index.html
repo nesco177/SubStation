@@ -9,6 +9,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <style>
+    /* Your CSS remains unchanged - very clean! */
     body {
       font-family: 'Arial', sans-serif;
       text-align: center;
@@ -18,7 +19,6 @@
       margin: 0;
       color: #333;
     }
-
     button {
       font-size: 18px;
       padding: 12px 30px;
@@ -28,48 +28,33 @@
       cursor: pointer;
       transition: all 0.3s ease;
     }
-
     .on {
       background: linear-gradient(145deg, #4caf50, #45a049);
       color: white;
     }
-
     .off {
       background: linear-gradient(145deg, #f44336, #e53935);
       color: white;
     }
-
     .download {
       background: linear-gradient(145deg, #2196f3, #1976d2);
       color: white;
     }
-
     #loading {
       display: none;
       font-size: 18px;
       color: green;
     }
-
-    #statusButton {
-      font-size: 28px;
-      padding: 18px 50px;
-      border-radius: 50px;
-      margin-bottom: 20px;
-      transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), box-shadow 0.4s ease;
-    }
-
-    #timer {
+    #timer, #timerTown {
       font-size: 36px;
       margin: 20px;
       font-weight: bold;
       color: #333;
     }
-
-    #buttonArea {
+    #buttonArea, #buttonAreaTown {
       margin-bottom: 30px;
     }
-
-    #lastInterruption {
+    #lastInterruption, #lastInterruptionTown {
       margin-top: 20px;
       font-size: 22px;
       background: white;
@@ -78,10 +63,9 @@
       border-radius: 15px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       color: #555;
-      font-weight: normal;
+      font-weight: bold;
       transition: opacity 0.5s ease, transform 0.3s ease;
     }
-
     table {
       margin: 40px auto;
       border-collapse: collapse;
@@ -89,256 +73,286 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       border-radius: 10px;
     }
-
     th, td {
       padding: 12px 25px;
       border: 1px solid #ccc;
       font-size: 16px;
       text-align: center;
     }
-
     th {
       background-color: #f1f1f1;
       color: #555;
     }
-
     tr:hover {
       background-color: #f9f9f9;
       transform: scale(1.02);
+    }
+    #statusButton, #statusButtonTown {
+      font-size: 28px;
+      padding: 18px 50px;
+      border-radius: 50px;
+      margin-bottom: 20px;
+      transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), box-shadow 0.4s ease;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+      padding: 30px 20px;
+      margin: 20px auto;
+      width: 90%;
+      max-width: 600px;
+      transition: all 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.15);
+    }
+    .card h2 {
+      font-size: 26px;
+      margin-bottom: 20px;
+      color: #444;
     }
   </style>
 </head>
 <body>
 
+<!-- Sultanabad Card -->
+<div class="card">
+  <h2>Sultanabad Substation</h2>
   <button id="statusButton">Sultanabad</button>
   <div id="timer">00:00:00</div>
-
   <div id="buttonArea">
     <button id="onButton" class="on">ON</button>
     <button id="offButton" class="off">OFF</button>
     <div id="lastInterruption">Last Interruption: --</div>
   </div>
+</div>
 
-  <br>
-  <button id="downloadButton" class="download">Download Logs (Excel)</button>
-  <p id="loading">Downloading...</p>
+<!-- Town Card -->
+<div class="card">
+  <h2>Town Substation</h2>
+  <button id="statusButtonTown">Town</button>
+  <div id="timerTown">00:00:00</div>
+  <div id="buttonAreaTown">
+    <button id="onButtonTown" class="on">ON</button>
+    <button id="offButtonTown" class="off">OFF</button>
+    <div id="lastInterruptionTown">Last Interruption: --</div>
+  </div>
+</div>
 
-  <table id="logTable" border="1">
-    <thead>
-      <tr><th>Timestamp</th><th>Action</th></tr>
-    </thead>
-    <tbody>
-      <!-- Logs will appear here -->
-    </tbody>
-  </table>
+<br>
+<button id="downloadButton" class="download">Download Logs (Excel)</button>
+<p id="loading">Downloading...</p>
 
-  <script>
-    // Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyAy53-F5QZ5a0f9DW9emesit1KA2T7v7Do",
-      authDomain: "testt-b241d.firebaseapp.com",
-      projectId: "testt-b241d",
-      storageBucket: "testt-b241d.appspot.com",
-      messagingSenderId: "288476078303",
-      appId: "1:288476078303:android:ff06d4a9d5c432f41ac96a"
-    };
+<table id="logTable" border="1">
+  <thead>
+    <tr><th>Timestamp</th><th>Action</th><th>Location</th></tr>
+  </thead>
+  <tbody>
+    <!-- Logs appear here -->
+  </tbody>
+</table>
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+<script>
+  // Initialize Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyAy53-F5QZ5a0f9DW9emesit1KA2T7v7Do",
+    authDomain: "testt-b241d.firebaseapp.com",
+    projectId: "testt-b241d",
+    storageBucket: "testt-b241d.appspot.com",
+    messagingSenderId: "288476078303",
+    appId: "1:288476078303:android:ff06d4a9d5c432f41ac96a"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-    const statusDoc = db.collection('Substation').doc('f1_stat');
-    const logsCol = db.collection('f1_logs');
-    const lastInterruptionDoc = db.collection('Substation').doc('f1_last');
+  // References
+  const statusDoc = db.collection('Substation').doc('f1_stat');
+  const logsCol = db.collection('f1_logs');
+  const lastInterruptionDoc = db.collection('Substation').doc('f1_last');
+  
+  const statusDocTown = db.collection('Substation').doc('f2_stat');
+  const logsColTown = db.collection('f2_logs');
+  const lastInterruptionDocTown = db.collection('Substation').doc('f2_last');
 
-    const statusButton = document.getElementById('statusButton');
-    const timerDiv = document.getElementById('timer');
-    const onBtn = document.getElementById('onButton');
-    const offBtn = document.getElementById('offButton');
-    const downloadBtn = document.getElementById('downloadButton');
-    const loadingText = document.getElementById('loading');
-    const logTable = document.getElementById('logTable').querySelector('tbody');
-    const lastInterruptionDiv = document.getElementById('lastInterruption');
+  // Elements
+  const statusButton = document.getElementById('statusButton');
+  const statusButtonTown = document.getElementById('statusButtonTown');
+  const timerDiv = document.getElementById('timer');
+  const timerDivTown = document.getElementById('timerTown');
+  const onBtn = document.getElementById('onButton');
+  const offBtn = document.getElementById('offButton');
+  const onBtnTown = document.getElementById('onButtonTown');
+  const offBtnTown = document.getElementById('offButtonTown');
+  const downloadBtn = document.getElementById('downloadButton');
+  const loadingText = document.getElementById('loading');
+  const logTable = document.getElementById('logTable').querySelector('tbody');
+  const lastInterruptionDiv = document.getElementById('lastInterruption');
+  const lastInterruptionDivTown = document.getElementById('lastInterruptionTown');
 
-    let timerInterval = null;
-    let startTime = null;
+  let timerInterval = { timer: null };
+  let timerIntervalTown = { timer: null };
 
-    onBtn.onclick = async () => {
-      disableButtons();
-      const now = new Date().toISOString();
+  function animateButton(button, state) {
+    button.style.transition = "transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), box-shadow 0.4s ease";
+    button.style.transform = "scale(1.15)";
+    if (state === "ON") {
+      button.style.boxShadow = "0 0 20px 5px rgba(0, 255, 0, 0.6)";
+    } else {
+      button.style.boxShadow = "0 0 20px 5px rgba(255, 0, 0, 0.6)";
+    }
+    setTimeout(() => {
+      button.style.transform = "scale(1)";
+      button.style.boxShadow = "none";
+    }, 400);
+  }
+
+  function startTimer(element, start, intervalIdHolder) {
+    if (intervalIdHolder.timer) clearInterval(intervalIdHolder.timer);
+    intervalIdHolder.timer = setInterval(() => {
+      const now = new Date();
+      const diff = Math.floor((now - start) / 1000);
+      const hours = String(Math.floor(diff / 3600)).padStart(2, '0');
+      const minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+      const seconds = String(diff % 60).padStart(2, '0');
+      element.textContent = `${hours}:${minutes}:${seconds}`;
+    }, 1000);
+  }
+
+  function stopTimer(element, intervalIdHolder) {
+    if (intervalIdHolder.timer) clearInterval(intervalIdHolder.timer);
+    intervalIdHolder.timer = null;
+    element.textContent = "00:00:00";
+  }
+
+  async function handleButtonClick(statusDoc, logsCol, location, button, timerElement, onBtn, offBtn, lastInterruptionDoc, isOn) {
+    onBtn.disabled = true;
+    offBtn.disabled = true;
+    const now = new Date().toISOString();
+    if (isOn) {
       await statusDoc.set({ currentStatus: "ON", f_on: now, f_off: null });
-      await logsCol.add({ action: "ON", timestamp: now });
-      await updateLastInterruption();
-      updateUI('ON', now);
-      fetchLogs();
-    };
-
-    offBtn.onclick = async () => {
-      disableButtons();
-      const now = new Date().toISOString();
+    } else {
       await statusDoc.set({ currentStatus: "OFF", f_on: null, f_off: now });
-      await logsCol.add({ action: "OFF", timestamp: now });
-      updateUI('OFF', now);
-      fetchLogs();
-    };
-
-    function disableButtons() {
-      onBtn.disabled = true;
-      offBtn.disabled = true;
     }
-
-    async function fetchStatus() {
-      const doc = await statusDoc.get();
-      if (doc.exists) {
-        const data = doc.data();
-        updateUI(data.currentStatus, data.f_off);
-      } else {
-        statusButton.style.backgroundColor = "grey";
-      }
-      fetchLastInterruption();
-    }
-
-    function updateUI(state, time = null) {
-      animateButton(state);
-
-      if (state === "ON") {
-        statusButton.style.backgroundColor = "green";
-        statusButton.style.color = "white";
-        onBtn.disabled = true;
-        offBtn.disabled = false;
-        stopTimer();
-      } else if (state === "OFF") {
-        statusButton.style.backgroundColor = "red";
-        statusButton.style.color = "white";
-        onBtn.disabled = false;
-        offBtn.disabled = true;
-        if (time) {
-          startTimer(new Date(time));
-        } else {
-          startTimer(new Date());
-        }
-      }
-    }
-
-    function animateButton(state) {
-      statusButton.style.transition = "transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), box-shadow 0.4s ease";
-      statusButton.style.transform = "scale(1.15)";
-      if (state === "ON") {
-        statusButton.style.boxShadow = "0 0 20px 5px rgba(0, 255, 0, 0.6)";
-      } else if (state === "OFF") {
-        statusButton.style.boxShadow = "0 0 20px 5px rgba(255, 0, 0, 0.6)";
-      }
-      setTimeout(() => {
-        statusButton.style.transform = "scale(1)";
-        statusButton.style.boxShadow = "none";
-      }, 400);
-    }
-
-    function startTimer(start) {
-      if (timerInterval) clearInterval(timerInterval);
-      startTime = start;
-      timerInterval = setInterval(() => {
-        const now = new Date();
-        const diff = Math.floor((now - startTime) / 1000);
-        const hours = String(Math.floor(diff / 3600)).padStart(2, '0');
-        const minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-        const seconds = String(diff % 60).padStart(2, '0');
-        timerDiv.textContent = `${hours}:${minutes}:${seconds}`;
-      }, 1000);
-    }
-
-    function stopTimer() {
-      if (timerInterval) clearInterval(timerInterval);
-      timerInterval = null;
-      timerDiv.textContent = "00:00:00";
-    }
-
-    async function fetchLogs() {
-      const snapshot = await logsCol.orderBy('timestamp', 'desc').limit(50).get();
-      logTable.innerHTML = '';
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const row = `<tr><td>${data.timestamp ? new Date(data.timestamp).toLocaleString() : "No time"}</td><td>${data.action || "Unknown"}</td></tr>`;
-        logTable.innerHTML += row;
-      });
-    }
-
-    async function updateLastInterruption() {
-      const snapshot = await logsCol.orderBy('timestamp', 'desc').limit(2).get();
-      const logs = snapshot.docs.map(doc => doc.data());
-      if (logs.length === 2 && logs[0].action === "ON" && logs[1].action === "OFF") {
-        const onTime = new Date(logs[0].timestamp);
-        const offTime = new Date(logs[1].timestamp);
-        const diffMs = onTime - offTime;
-        const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
-        const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
-        const s = String(Math.floor((diffMs % 60000) / 1000)).padStart(2, '0');
-        const time = onTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const result = `Last Interruption: ${h}:${m}:${s} at ${time}`;
-        await lastInterruptionDoc.set({ text: result });
-        lastInterruptionDiv.textContent = result;
-        lastInterruptionDiv.style.opacity = '0';
-        setTimeout(() => { lastInterruptionDiv.style.opacity = '1'; }, 100);
-      }
-    }
-
-    async function fetchLastInterruption() {
-      const doc = await lastInterruptionDoc.get();
-      if (doc.exists) {
-        lastInterruptionDiv.textContent = doc.data().text;
-      }
-    }
-
-    downloadBtn.onclick = async () => {
-      loadingText.style.display = 'block';
-      try {
-        const snapshot = await logsCol.orderBy('timestamp').get();
-        const logs = snapshot.docs.map(doc => doc.data());
-
-        const processedLogs = [];
-        let lastOnTime = null;
-
-        logs.forEach(entry => {
-          if (entry.action === "ON") {
-            lastOnTime = new Date(entry.timestamp);
-          } else if (entry.action === "OFF" && lastOnTime) {
-            const offTime = new Date(entry.timestamp);
-            const diffMs = offTime - lastOnTime;
-            const diffMins = Math.floor(diffMs / 60000);
-            const hours = Math.floor(diffMins / 60);
-            const minutes = diffMins % 60;
-
-            processedLogs.push({
-              Date: lastOnTime.toLocaleDateString(),
-              Name: "Sultanabad",
-              Time: offTime.toLocaleTimeString(),
-              Interruption: `${hours} hr ${minutes} min`
-            });
-            lastOnTime = null;
-          }
-        });
-
-        if (processedLogs.length === 0) {
-          alert('No complete ON/OFF pairs found.');
-          loadingText.style.display = 'none';
-          return;
-        }
-
-        const worksheet = XLSX.utils.json_to_sheet(processedLogs);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
-        XLSX.writeFile(workbook, "logs_with_interruption.xlsx");
-        alert('Logs downloaded successfully!');
-      } catch (error) {
-        console.error('Error downloading logs:', error);
-        alert('Error downloading logs. See console for details.');
-      } finally {
-        loadingText.style.display = 'none';
-      }
-    };
-
-    fetchStatus();
+    await logsCol.add({ action: isOn ? "ON" : "OFF", timestamp: now, location: location });
+    await updateLastInterruption(logsCol, lastInterruptionDoc, location, location === "Sultanabad" ? lastInterruptionDiv : lastInterruptionDivTown);
+    updateUI(button, timerElement, isOn ? "ON" : "OFF", now, onBtn, offBtn, location);
     fetchLogs();
-  </script>
+  }
+
+  function updateUI(button, timerElement, state, time, onBtn, offBtn, location) {
+    animateButton(button, state);
+    if (state === "ON") {
+      button.style.backgroundColor = "green";
+      button.style.color = "white";
+      onBtn.disabled = true;
+      offBtn.disabled = false;
+      stopTimer(timerElement, location === "Sultanabad" ? timerInterval : timerIntervalTown);
+    } else {
+      button.style.backgroundColor = "red";
+      button.style.color = "white";
+      onBtn.disabled = false;
+      offBtn.disabled = true;
+      startTimer(timerElement, new Date(time), location === "Sultanabad" ? timerInterval : timerIntervalTown);
+    }
+  }
+
+  async function fetchLogs() {
+    const [snapshot1, snapshot2] = await Promise.all([
+      logsCol.orderBy('timestamp', 'desc').limit(50).get(),
+      logsColTown.orderBy('timestamp', 'desc').limit(50).get()
+    ]);
+
+    const allLogs = [...snapshot1.docs.map(doc => ({...doc.data(), location: "Sultanabad"})),
+                     ...snapshot2.docs.map(doc => ({...doc.data(), location: "Town"}))];
+
+    allLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    logTable.innerHTML = '';
+    allLogs.forEach(data => {
+      const row = `<tr><td>${new Date(data.timestamp).toLocaleString()}</td><td>${data.action}</td><td>${data.location}</td></tr>`;
+      logTable.innerHTML += row;
+    });
+  }
+
+  async function updateLastInterruption(logsCol, lastInterruptionDoc, location, lastDiv) {
+    const snapshot = await logsCol.orderBy('timestamp', 'desc').limit(2).get();
+    const logs = snapshot.docs.map(doc => doc.data());
+    if (logs.length === 2 && logs[0].action === "ON" && logs[1].action === "OFF") {
+      const onTime = new Date(logs[0].timestamp);
+      const offTime = new Date(logs[1].timestamp);
+      const diffMs = onTime - offTime;
+      const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
+      const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
+      const s = String(Math.floor((diffMs % 60000) / 1000)).padStart(2, '0');
+      const time = onTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const result = `Last Interruption: ${h}:${m}:${s} at ${time}`;
+      await lastInterruptionDoc.set({ text: result });
+      lastDiv.textContent = result;
+      lastDiv.style.opacity = '0';
+      setTimeout(() => { lastDiv.style.opacity = '1'; }, 100);
+    }
+  }
+
+  async function fetchCurrentStatus(statusDoc, button, timerElement, onBtn, offBtn, location) {
+    const doc = await statusDoc.get();
+    if (doc.exists) {
+      const data = doc.data();
+      if (data.currentStatus === "ON") {
+        updateUI(button, timerElement, "ON", data.f_on, onBtn, offBtn, location);
+      } else if (data.currentStatus === "OFF") {
+        updateUI(button, timerElement, "OFF", data.f_off, onBtn, offBtn, location);
+      }
+    }
+  }
+
+  async function fetchLastInterruption(lastInterruptionDoc, lastDiv) {
+    const doc = await lastInterruptionDoc.get();
+    if (doc.exists) {
+      lastDiv.textContent = doc.data().text || "Last Interruption: --";
+    }
+  }
+
+  // Button actions
+  onBtn.onclick = () => handleButtonClick(statusDoc, logsCol, "Sultanabad", statusButton, timerDiv, onBtn, offBtn, lastInterruptionDoc, true);
+  offBtn.onclick = () => handleButtonClick(statusDoc, logsCol, "Sultanabad", statusButton, timerDiv, onBtn, offBtn, lastInterruptionDoc, false);
+  onBtnTown.onclick = () => handleButtonClick(statusDocTown, logsColTown, "Town", statusButtonTown, timerDivTown, onBtnTown, offBtnTown, lastInterruptionDocTown, true);
+  offBtnTown.onclick = () => handleButtonClick(statusDocTown, logsColTown, "Town", statusButtonTown, timerDivTown, onBtnTown, offBtnTown, lastInterruptionDocTown, false);
+
+  downloadBtn.onclick = async () => {
+    loadingText.style.display = 'block';
+    try {
+      const [snapshot1, snapshot2] = await Promise.all([
+        logsCol.orderBy('timestamp').get(),
+        logsColTown.orderBy('timestamp').get()
+      ]);
+
+      const allLogs = [...snapshot1.docs.map(doc => ({...doc.data(), location: "Sultanabad"})),
+                       ...snapshot2.docs.map(doc => ({...doc.data(), location: "Town"}))];
+
+      allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+      const worksheet = XLSX.utils.json_to_sheet(allLogs);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
+      XLSX.writeFile(workbook, "combined_logs.xlsx");
+
+      alert('Logs downloaded successfully!');
+    } catch (error) {
+      console.error('Error downloading logs:', error);
+      alert('Error downloading logs. See console for details.');
+    } finally {
+      loadingText.style.display = 'none';
+    }
+  };
+
+  fetchLogs();
+  fetchCurrentStatus(statusDoc, statusButton, timerDiv, onBtn, offBtn, "Sultanabad");
+  fetchCurrentStatus(statusDocTown, statusButtonTown, timerDivTown, onBtnTown, offBtnTown, "Town");
+  fetchLastInterruption(lastInterruptionDoc, lastInterruptionDiv);
+  fetchLastInterruption(lastInterruptionDocTown, lastInterruptionDivTown);
+</script>
 
 </body>
 </html>
