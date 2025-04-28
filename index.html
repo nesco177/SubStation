@@ -9,13 +9,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <style>
-    /* Clean, modern styles */
+    /* Your CSS remains unchanged - very clean! */
     body {
       font-family: 'Arial', sans-serif;
       text-align: center;
-      margin: 0;
-      padding: 0;
+      margin-top: 50px;
       background: linear-gradient(145deg, #f0f0f0, #dcdcdc);
+      padding: 0;
+      margin: 0;
       color: #333;
     }
     button {
@@ -48,6 +49,10 @@
       font-size: 36px;
       margin: 20px;
       font-weight: bold;
+      color: #333;
+    }
+    #buttonArea, #buttonAreaTown {
+      margin-bottom: 30px;
     }
     #lastInterruption, #lastInterruptionTown {
       margin-top: 20px;
@@ -57,6 +62,9 @@
       padding: 15px 25px;
       border-radius: 15px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      color: #555;
+      font-weight: bold;
+      transition: opacity 0.5s ease, transform 0.3s ease;
     }
     table {
       margin: 40px auto;
@@ -68,13 +76,23 @@
     th, td {
       padding: 12px 25px;
       border: 1px solid #ccc;
+      font-size: 16px;
       text-align: center;
     }
     th {
       background-color: #f1f1f1;
+      color: #555;
     }
     tr:hover {
       background-color: #f9f9f9;
+      transform: scale(1.02);
+    }
+    #statusButton, #statusButtonTown {
+      font-size: 28px;
+      padding: 18px 50px;
+      border-radius: 50px;
+      margin-bottom: 20px;
+      transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), box-shadow 0.4s ease;
     }
     .card {
       background: #ffffff;
@@ -84,16 +102,16 @@
       margin: 20px auto;
       width: 90%;
       max-width: 600px;
+      transition: all 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.15);
     }
     .card h2 {
+      font-size: 26px;
       margin-bottom: 20px;
-    }
-    #statusButton, #statusButtonTown {
-      font-size: 28px;
-      padding: 18px 50px;
-      border-radius: 50px;
-      margin-bottom: 20px;
-      transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), box-shadow 0.4s ease;
+      color: #444;
     }
   </style>
 </head>
@@ -127,17 +145,17 @@
 <button id="downloadButton" class="download">Download Logs (Excel)</button>
 <p id="loading">Downloading...</p>
 
-<table id="logTable">
+<table id="logTable" border="1">
   <thead>
     <tr><th>Timestamp</th><th>Action</th><th>Location</th></tr>
   </thead>
   <tbody>
-    <!-- Logs will appear here -->
+    <!-- Logs appear here -->
   </tbody>
 </table>
 
 <script>
-  // Firebase configuration
+  // Initialize Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyAy53-F5QZ5a0f9DW9emesit1KA2T7v7Do",
     authDomain: "testt-b241d.firebaseapp.com",
@@ -148,6 +166,15 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+
+  // References
+  const statusDoc = db.collection('Substation').doc('f1_stat');
+  const logsCol = db.collection('f1_logs');
+  const lastInterruptionDoc = db.collection('Substation').doc('f1_last');
+  
+  const statusDocTown = db.collection('Substation').doc('f2_stat');
+  const logsColTown = db.collection('f2_logs');
+  const lastInterruptionDocTown = db.collection('Substation').doc('f2_last');
 
   // Elements
   const statusButton = document.getElementById('statusButton');
@@ -164,43 +191,38 @@
   const lastInterruptionDiv = document.getElementById('lastInterruption');
   const lastInterruptionDivTown = document.getElementById('lastInterruptionTown');
 
-  // Firestore references
-  const statusDoc = db.collection('Substation').doc('f1_stat');
-  const logsCol = db.collection('f1_logs');
-  const lastInterruptionDoc = db.collection('Substation').doc('f1_last');
-  
-  const statusDocTown = db.collection('Substation').doc('f2_stat');
-  const logsColTown = db.collection('f2_logs');
-  const lastInterruptionDocTown = db.collection('Substation').doc('f2_last');
-
-  // Timer holders
   let timerInterval = { timer: null };
   let timerIntervalTown = { timer: null };
 
-  // Helpers
   function animateButton(button, state) {
+    button.style.transition = "transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), box-shadow 0.4s ease";
     button.style.transform = "scale(1.15)";
-    button.style.boxShadow = state === "ON" ? "0 0 20px 5px rgba(0,255,0,0.6)" : "0 0 20px 5px rgba(255,0,0,0.6)";
+    if (state === "ON") {
+      button.style.boxShadow = "0 0 20px 5px rgba(0, 255, 0, 0.6)";
+    } else {
+      button.style.boxShadow = "0 0 20px 5px rgba(255, 0, 0, 0.6)";
+    }
     setTimeout(() => {
       button.style.transform = "scale(1)";
       button.style.boxShadow = "none";
     }, 400);
   }
 
-  function startTimer(element, start, intervalHolder) {
-    clearInterval(intervalHolder.timer);
-    intervalHolder.timer = setInterval(() => {
+  function startTimer(element, start, intervalIdHolder) {
+    if (intervalIdHolder.timer) clearInterval(intervalIdHolder.timer);
+    intervalIdHolder.timer = setInterval(() => {
       const now = new Date();
       const diff = Math.floor((now - start) / 1000);
-      const h = String(Math.floor(diff / 3600)).padStart(2, '0');
-      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-      const s = String(diff % 60).padStart(2, '0');
-      element.textContent = `${h}:${m}:${s}`;
+      const hours = String(Math.floor(diff / 3600)).padStart(2, '0');
+      const minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+      const seconds = String(diff % 60).padStart(2, '0');
+      element.textContent = `${hours}:${minutes}:${seconds}`;
     }, 1000);
   }
 
-  function stopTimer(element, intervalHolder) {
-    clearInterval(intervalHolder.timer);
+  function stopTimer(element, intervalIdHolder) {
+    if (intervalIdHolder.timer) clearInterval(intervalIdHolder.timer);
+    intervalIdHolder.timer = null;
     element.textContent = "00:00:00";
   }
 
@@ -223,58 +245,76 @@
     animateButton(button, state);
     if (state === "ON") {
       button.style.backgroundColor = "green";
+      button.style.color = "white";
       onBtn.disabled = true;
       offBtn.disabled = false;
       stopTimer(timerElement, location === "Sultanabad" ? timerInterval : timerIntervalTown);
     } else {
       button.style.backgroundColor = "red";
+      button.style.color = "white";
       onBtn.disabled = false;
       offBtn.disabled = true;
       startTimer(timerElement, new Date(time), location === "Sultanabad" ? timerInterval : timerIntervalTown);
     }
   }
 
-  async function updateLastInterruption(logsCol, lastDoc, location, div) {
+  async function fetchLogs() {
+    const [snapshot1, snapshot2] = await Promise.all([
+      logsCol.orderBy('timestamp', 'desc').limit(50).get(),
+      logsColTown.orderBy('timestamp', 'desc').limit(50).get()
+    ]);
+
+    const allLogs = [...snapshot1.docs.map(doc => ({...doc.data(), location: "Sultanabad"})),
+                     ...snapshot2.docs.map(doc => ({...doc.data(), location: "Town"}))];
+
+    allLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    logTable.innerHTML = '';
+    allLogs.forEach(data => {
+      const row = `<tr><td>${new Date(data.timestamp).toLocaleString()}</td><td>${data.action}</td><td>${data.location}</td></tr>`;
+      logTable.innerHTML += row;
+    });
+  }
+
+  async function updateLastInterruption(logsCol, lastInterruptionDoc, location, lastDiv) {
     const snapshot = await logsCol.orderBy('timestamp', 'desc').limit(2).get();
     const logs = snapshot.docs.map(doc => doc.data());
     if (logs.length === 2 && logs[0].action === "ON" && logs[1].action === "OFF") {
       const onTime = new Date(logs[0].timestamp);
       const offTime = new Date(logs[1].timestamp);
-      const diff = onTime - offTime;
-      const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
-      const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
-      const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+      const diffMs = onTime - offTime;
+      const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
+      const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
+      const s = String(Math.floor((diffMs % 60000) / 1000)).padStart(2, '0');
       const time = onTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const text = `Last Interruption: ${h}:${m}:${s} at ${time}`;
-      await lastDoc.set({ text });
-      div.textContent = text;
+      const result = `Last Interruption: ${h}:${m}:${s} at ${time}`;
+      await lastInterruptionDoc.set({ text: result });
+      lastDiv.textContent = result;
+      lastDiv.style.opacity = '0';
+      setTimeout(() => { lastDiv.style.opacity = '1'; }, 100);
     }
   }
 
-  async function fetchLogs() {
-    const [snap1, snap2] = await Promise.all([
-      logsCol.orderBy('timestamp', 'desc').limit(50).get(),
-      logsColTown.orderBy('timestamp', 'desc').limit(50).get()
-    ]);
-    const allLogs = [...snap1.docs.map(d => d.data()), ...snap2.docs.map(d => d.data())];
-    allLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    logTable.innerHTML = allLogs.map(d => `<tr><td>${new Date(d.timestamp).toLocaleString()}</td><td>${d.action}</td><td>${d.location}</td></tr>`).join('');
-  }
-
-  async function fetchCurrentStatus(docRef, button, timer, onBtn, offBtn, location) {
-    const doc = await docRef.get();
+  async function fetchCurrentStatus(statusDoc, button, timerElement, onBtn, offBtn, location) {
+    const doc = await statusDoc.get();
     if (doc.exists) {
       const data = doc.data();
-      if (data.currentStatus === "ON") updateUI(button, timer, "ON", data.f_on, onBtn, offBtn, location);
-      if (data.currentStatus === "OFF") updateUI(button, timer, "OFF", data.f_off, onBtn, offBtn, location);
+      if (data.currentStatus === "ON") {
+        updateUI(button, timerElement, "ON", data.f_on, onBtn, offBtn, location);
+      } else if (data.currentStatus === "OFF") {
+        updateUI(button, timerElement, "OFF", data.f_off, onBtn, offBtn, location);
+      }
     }
   }
 
-  async function fetchLastInterruption(docRef, div) {
-    const doc = await docRef.get();
-    if (doc.exists) div.textContent = doc.data().text || "Last Interruption: --";
+  async function fetchLastInterruption(lastInterruptionDoc, lastDiv) {
+    const doc = await lastInterruptionDoc.get();
+    if (doc.exists) {
+      lastDiv.textContent = doc.data().text || "Last Interruption: --";
+    }
   }
 
+  // Button actions
   onBtn.onclick = () => handleButtonClick(statusDoc, logsCol, "Sultanabad", statusButton, timerDiv, onBtn, offBtn, lastInterruptionDoc, true);
   offBtn.onclick = () => handleButtonClick(statusDoc, logsCol, "Sultanabad", statusButton, timerDiv, onBtn, offBtn, lastInterruptionDoc, false);
   onBtnTown.onclick = () => handleButtonClick(statusDocTown, logsColTown, "Town", statusButtonTown, timerDivTown, onBtnTown, offBtnTown, lastInterruptionDocTown, true);
@@ -283,19 +323,25 @@
   downloadBtn.onclick = async () => {
     loadingText.style.display = 'block';
     try {
-      const [snap1, snap2] = await Promise.all([
+      const [snapshot1, snapshot2] = await Promise.all([
         logsCol.orderBy('timestamp').get(),
         logsColTown.orderBy('timestamp').get()
       ]);
-      const allLogs = [...snap1.docs.map(d => d.data()), ...snap2.docs.map(d => d.data())];
+
+      const allLogs = [...snapshot1.docs.map(doc => ({...doc.data(), location: "Sultanabad"})),
+                       ...snapshot2.docs.map(doc => ({...doc.data(), location: "Town"}))];
+
+      allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
       const worksheet = XLSX.utils.json_to_sheet(allLogs);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
       XLSX.writeFile(workbook, "combined_logs.xlsx");
+
       alert('Logs downloaded successfully!');
-    } catch (err) {
-      console.error('Error:', err);
-      alert('Failed to download.');
+    } catch (error) {
+      console.error('Error downloading logs:', error);
+      alert('Error downloading logs. See console for details.');
     } finally {
       loadingText.style.display = 'none';
     }
