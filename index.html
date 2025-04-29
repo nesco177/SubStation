@@ -540,6 +540,19 @@ downloadBtn.onclick = async () => {
 
     // Generate the worksheet from the formatted data
     const worksheet = XLSX.utils.json_to_sheet(logsForExcel);
+
+    // Set column widths based on content (approximation)
+    const columnWidths = [
+      { wch: 15 }, // Date
+      { wch: 10 }, // Action
+      { wch: 15 }, // Time
+      { wch: 15 }, // Location
+      { wch: 20 }, // Interruption
+    ];
+
+    worksheet['!cols'] = columnWidths;
+
+    // Create a new workbook and append the worksheet
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
 
@@ -554,7 +567,6 @@ downloadBtn.onclick = async () => {
     loadingText.style.display = 'none';
   }
 };
-
 
 
   fetchLogs();
