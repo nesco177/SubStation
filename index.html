@@ -475,8 +475,12 @@ async function updateLastInterruption(logsCol, lastInterruptionDoc, location, la
   onBtnTown.onclick = () => handleButtonClick(statusDocTown, logsColTown, "Town", statusButtonTown, timerDivTown, onBtnTown, offBtnTown, lastInterruptionDocTown, true);
   offBtnTown.onclick = () => handleButtonClick(statusDocTown, logsColTown, "Town", statusButtonTown, timerDivTown, onBtnTown, offBtnTown, lastInterruptionDocTown, false);
 
-  downloadBtn.onclick = async () => {
+downloadBtn.onclick = async () => {
   loadingText.style.display = 'block';
+  
+  let lastOffSultanabad = null; // Initialize for Sultanabad
+  let lastOffTown = null; // Initialize for Town
+
   try {
     const [snapshot1, snapshot2] = await Promise.all([
       logsCol.orderBy('timestamp').get(),
@@ -550,6 +554,7 @@ async function updateLastInterruption(logsCol, lastInterruptionDoc, location, la
     loadingText.style.display = 'none';
   }
 };
+
 
 
   fetchLogs();
