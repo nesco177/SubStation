@@ -169,7 +169,7 @@ button:disabled {
       border-radius: 20px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.1);
       padding: 30px 20px;
-      margin: e auto;
+      margin: 20px auto;
       width: 90%;
       max-width: 600px;
       transition: all 0.3s ease;
@@ -189,7 +189,6 @@ button:disabled {
 
 <!-- Sultanabad Card -->
 <div class="card">
-  <h2>Sultanabad Substation</h2>
   <button id="statusButton">Sultanabad</button>
   <div id="timer">00:00:00</div>
   <div id="buttonArea">
@@ -201,7 +200,6 @@ button:disabled {
 
 <!-- Town Card -->
 <div class="card">
-  <h2>Town Substation</h2>
   <button id="statusButtonTown">Town</button>
   <div id="timerTown">00:00:00</div>
   <div id="buttonAreaTown">
@@ -217,11 +215,19 @@ button:disabled {
 
 <table id="logTable" border="1">
   <thead>
-    <tr><th>Timestamp</th><th>Action</th><th>Location</th></tr>
+    <tr>
+      <th>Date</th>
+      <th>Action</th>
+      <th>Time</th>
+      <th>Location</th>
+      <th>Interruption</th>
+    </tr>
   </thead>
   <tbody>
     <!-- Logs appear here -->
   </tbody>
+</table>
+
 </table>
 
 <script>
@@ -328,23 +334,79 @@ button:disabled {
     }
   }
 
-  async function fetchLogs() {
-    const [snapshot1, snapshot2] = await Promise.all([
-      logsCol.orderBy('timestamp', 'desc').limit(50).get(),
-      logsColTown.orderBy('timestamp', 'desc').limit(50).get()
-    ]);
+async function fetchLogs() {
+  const [snapshot1, snapshot2] = await Promise.all([
+    logsCol.orderBy('timestamp').get(), // Order logs in ascending order for Sultanabad
+    logsColTown.orderBy('timestamp').get() // Order logs in ascending order for Town
+  ]);
 
-    const allLogs = [...snapshot1.docs.map(doc => ({...doc.data(), location: "Sultanabad"})),
-                     ...snapshot2.docs.map(doc => ({...doc.data(), location: "Town"}))];
+  const allLogs = [...snapshot1.docs.map(doc => ({...doc.data(), location: "Sultanabad"})),
+                   ...snapshot2.docs.map(doc => ({...doc.data(), location: "Town"}))];
 
-    allLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)); // Ensure logs are sorted in ascending order
 
-    logTable.innerHTML = '';
-    allLogs.forEach(data => {
-      const row = `<tr><td>${new Date(data.timestamp).toLocaleString()}</td><td>${data.action}</td><td>${data.location}</td></tr>`;
-      logTable.innerHTML += row;
-    });
-  }
+  logTable.innerHTML = '';  // Clear the table first before repopulating
+
+  // Track the last OFF actions for both locations
+  let lastOffSultanabad = null;
+  let lastOffTown = null;
+
+  allLogs.forEach(data => {
+    let interruptionTime = '--'; // Default to "--" if no interruption time
+
+    // Calculate the most recent "OFF" for the current location
+    let lastOffAction = data.location === "Sultanabad" ? lastOffSultanabad : lastOffTown;
+
+    // Only calculate interruption time for "ON" actions and if there's a valid "OFF" action before it
+    if (data.action === "ON" && lastOffAction) {
+      const offTime = new Date(lastOffAction.timestamp); // Get the timestamp of the last "OFF" action
+      const onTime = new Date(data.timestamp); // Get the timestamp of the current "ON" action
+
+      // Calculate the time difference in milliseconds
+      const diffMs = onTime - offTime;
+
+      // Ensure the difference is positive and calculate hours, minutes, seconds
+      if (diffMs >= 0) {
+        const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
+        const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
+        const s = String(Math.floor((diffMs % 60000) / 1000)).padStart(2, '0');
+        interruptionTime = `${h}:${m}:${s}`;
+      }
+    }
+
+    // Update the last "OFF" action for the location if this is an "OFF" action
+    if (data.action === "OFF") {
+      if (data.location === "Sultanabad") {
+        lastOffSultanabad = data;
+      } else if (data.location === "Town") {
+        lastOffTown = data;
+      }
+    }
+
+    // Format the date in DD/MM/YYYY format
+    const logDate = new Date(data.timestamp);
+    const dateFormatted = logDate.toLocaleDateString('en-GB'); // 'en-GB' gives the format DD/MM/YYYY
+
+    // Format the time in 12-hour format (HH:MM:SS AM/PM)
+    const timeFormatted = logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+
+    // Create a new row for the log entry
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${dateFormatted}</td>
+      <td>${data.action}</td>
+      <td>${timeFormatted}</td>
+      <td>${data.location}</td>
+      <td>${interruptionTime}</td>
+    `;
+
+    // Insert the row at the top of the table (prepend)
+    logTable.prepend(row);
+  });
+}
+
+
+
 
 async function updateLastInterruption(logsCol, lastInterruptionDoc, location, lastDiv) {
   const snapshot = await logsCol.orderBy('timestamp', 'desc').limit(2).get();
@@ -413,90 +475,78 @@ async function updateLastInterruption(logsCol, lastInterruptionDoc, location, la
   onBtnTown.onclick = () => handleButtonClick(statusDocTown, logsColTown, "Town", statusButtonTown, timerDivTown, onBtnTown, offBtnTown, lastInterruptionDocTown, true);
   offBtnTown.onclick = () => handleButtonClick(statusDocTown, logsColTown, "Town", statusButtonTown, timerDivTown, onBtnTown, offBtnTown, lastInterruptionDocTown, false);
 
-
   downloadBtn.onclick = async () => {
-    loadingText.style.display = 'block';
-    try {
-      // Fetch logs for both Sultanabad and Town
-      const [snapshot1, snapshot2] = await Promise.all([
-        logsCol.orderBy('timestamp').get(),
-        logsColTown.orderBy('timestamp').get()
-      ]);
+  loadingText.style.display = 'block';
+  try {
+    const [snapshot1, snapshot2] = await Promise.all([
+      logsCol.orderBy('timestamp').get(),
+      logsColTown.orderBy('timestamp').get()
+    ]);
 
-      // Combine both logs
-      const allLogs = [
-        ...snapshot1.docs.map(doc => ({ ...doc.data(), location: "Sultanabad" })),
-        ...snapshot2.docs.map(doc => ({ ...doc.data(), location: "Town" }))
-      ];
+    const allLogs = [...snapshot1.docs.map(doc => ({...doc.data(), location: "Sultanabad"})),
+                     ...snapshot2.docs.map(doc => ({...doc.data(), location: "Town"}))];
 
-      allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-      // Prepare data for export
-      const exportData = [];
+    // Prepare data for the Excel sheet
+    const logsForExcel = allLogs.map(data => {
+      const logDate = new Date(data.timestamp);
+      const dateFormatted = logDate.toLocaleDateString('en-GB'); // 'DD/MM/YYYY'
+      const timeFormatted = logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+      
+      // Calculate the interruption time
+      let interruptionTime = '--'; // Default to "--" if no interruption time
+      let lastOffAction = data.location === "Sultanabad" ? lastOffSultanabad : lastOffTown;
 
-      // Process each log and prepare data for Excel export
-      for (const log of allLogs) {
-        const timestamp = new Date(log.timestamp);
-        
-        // Fetch the last interruption for each location (Sultanabad or Town)
-        const lastInterruption = await fetchLastInterruptionData(log.location);
-        
-        // Extract required values
-        const date = timestamp.toLocaleDateString('en-GB'); // Date in DD/MM/YYYY format
-        const lastOnTime = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-        const interruptionTime = calculateInterruptionTime(log.timestamp, lastInterruption);
+      if (data.action === "ON" && lastOffAction) {
+        const offTime = new Date(lastOffAction.timestamp);
+        const onTime = new Date(data.timestamp);
 
-        // Prepare row for Excel
-        exportData.push({
-          Date: date,
-          "Last On Time": lastOnTime,
-          Location: log.location,
-          "Interruption Time": interruptionTime
-        });
+        const diffMs = onTime - offTime;
+        if (diffMs >= 0) {
+          const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
+          const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
+          const s = String(Math.floor((diffMs % 60000) / 1000)).padStart(2, '0');
+          interruptionTime = `${h}:${m}:${s}`;
+        }
       }
 
-      // Convert export data to worksheet format
-      const worksheet = XLSX.utils.json_to_sheet(exportData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
-      XLSX.writeFile(workbook, "combined_logs.xlsx");
+      // Update the last "OFF" action for the location if this is an "OFF" action
+      if (data.action === "OFF") {
+        if (data.location === "Sultanabad") {
+          lastOffSultanabad = data;
+        } else if (data.location === "Town") {
+          lastOffTown = data;
+        }
+      }
 
-      alert('Logs downloaded successfully!');
-    } catch (error) {
-      console.error('Error downloading logs:', error);
-      alert('Error downloading logs. See console for details.');
-    } finally {
-      loadingText.style.display = 'none';
-    }
-  };
+      return {
+        Date: dateFormatted,
+        Action: data.action,
+        Time: timeFormatted,
+        Location: data.location,
+        Interruption: interruptionTime
+      };
+    });
 
-  // Fetch the last interruption data (it is assumed that it returns a value in the required format)
-  async function fetchLastInterruptionData(location) {
-    const lastInterruptionDoc = location === "Sultanabad" ? lastInterruptionDoc : lastInterruptionDocTown;
-    const doc = await lastInterruptionDoc.get();
-    
-    if (!doc.exists) {
-      console.error('No interruption data found!');
-      return { mainText: "--", subText: "--" }; // Handle case where data doesn't exist
-    }
+    // Generate the worksheet from the formatted data
+    const worksheet = XLSX.utils.json_to_sheet(logsForExcel);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
 
-    return doc.data();
+    // Write the Excel file
+    XLSX.writeFile(workbook, "combined_logs.xlsx");
+
+    alert('Logs downloaded successfully!');
+  } catch (error) {
+    console.error('Error downloading logs:', error);
+    alert('Error downloading logs. See console for details.');
+  } finally {
+    loadingText.style.display = 'none';
   }
-
-  // Calculate the interruption time (time difference between the ON time and last interruption)
-  function calculateInterruptionTime(onTime, lastInterruption) {
-    const onDate = new Date(onTime);
-    const lastInterruptionTime = new Date(lastInterruption.subText);
-    const diffMs = onDate - lastInterruptionTime;
-
-    const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
-    const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
-    const s = String(Math.floor((diffMs % 60000) / 1000)).padStart(2, '0');
-    return `${h}:${m}:${s}`;
-  }
+};
 
 
-  
   fetchLogs();
   fetchCurrentStatus(statusDoc, statusButton, timerDiv, onBtn, offBtn, "Sultanabad");
   fetchCurrentStatus(statusDocTown, statusButtonTown, timerDivTown, onBtnTown, offBtnTown, "Town");
