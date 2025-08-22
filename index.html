@@ -115,16 +115,16 @@ button:disabled {
       font-size: 18px;
       color: green;
     }
-    #timer, #timerTown {
+    #timer, #timerTown, #timerGreaterRoad , #timerNewMarket {
       font-size: 36px;
       margin: 20px;
       font-weight: bold;
       color: #333;
     }
-    #buttonArea, #buttonAreaTown {
+    #buttonArea, #buttonAreaTown, #buttonAreaGreaterRoad, #buttonAreaNewMarket {
       margin-bottom: 30px;
     }
-    #lastInterruption, #lastInterruptionTown {
+    #lastInterruption, #lastInterruptionTown, #lastInterruptionGreaterRoad, #lastInterruptionNewMarket {
       margin-top: 20px;
       font-size: 22px;
       background: white;
@@ -157,7 +157,7 @@ button:disabled {
       background-color: #f9f9f9;
       transform: scale(1.02);
     }
-    #statusButton, #statusButtonTown {
+    #statusButton, #statusButtonTown, #statusButtonGreaterRoad, #statusButtonNewMarket {
       font-size: 28px;
       padding: 18px 50px;
       border-radius: 50px;
@@ -209,6 +209,29 @@ button:disabled {
   </div>
 </div>
 
+<!-- Greater Road Card -->
+<div class="card">
+  <button id="statusButtonGreaterRoad">Greater Road</button>
+  <div id="timerGreaterRoad">00:00:00</div>
+  <div id="buttonAreaGreaterRoad">
+    <button id="onButtonGreaterRoad" class="on">ON</button>
+    <button id="offButtonGreaterRoad" class="off">OFF</button>
+    <div id="lastInterruptionGreaterRoad">Last Interruption: --</div>
+  </div>
+</div>
+
+<!-- New Market Card -->
+<div class="card">
+  <button id="statusButtonNewMarket">New Market</button>
+  <div id="timerNewMarket">00:00:00</div>
+  <div id="buttonAreaNewMarket">
+    <button id="onButtonNewMarket" class="on">ON</button>
+    <button id="offButtonNewMarket" class="off">OFF</button>
+    <div id="lastInterruptionNewMarket">Last Interruption: --</div>
+  </div>
+</div>
+
+
 <br>
 <button id="downloadButton" class="download">Download Logs (Excel)</button>
 <p id="loading">Downloading...</p>
@@ -251,24 +274,50 @@ button:disabled {
   const statusDocTown = db.collection('Substation').doc('f2_stat');
   const logsColTown = db.collection('f2_logs');
   const lastInterruptionDocTown = db.collection('Substation').doc('f2_last');
+  
+  // References for Greater Road and New Market
+const statusDocGreaterRoad = db.collection('Substation').doc('f3_stat');
+const logsColGreaterRoad = db.collection('f3_logs');
+const lastInterruptionDocGreaterRoad = db.collection('Substation').doc('f3_last');
+
+const statusDocNewMarket = db.collection('Substation').doc('f4_stat');
+const logsColNewMarket = db.collection('f4_logs');
+const lastInterruptionDocNewMarket = db.collection('Substation').doc('f4_last');
+
 
   // Elements
-  const statusButton = document.getElementById('statusButton');
-  const statusButtonTown = document.getElementById('statusButtonTown');
-  const timerDiv = document.getElementById('timer');
-  const timerDivTown = document.getElementById('timerTown');
-  const onBtn = document.getElementById('onButton');
-  const offBtn = document.getElementById('offButton');
-  const onBtnTown = document.getElementById('onButtonTown');
-  const offBtnTown = document.getElementById('offButtonTown');
-  const downloadBtn = document.getElementById('downloadButton');
-  const loadingText = document.getElementById('loading');
-  const logTable = document.getElementById('logTable').querySelector('tbody');
-  const lastInterruptionDiv = document.getElementById('lastInterruption');
-  const lastInterruptionDivTown = document.getElementById('lastInterruptionTown');
+  // Existing references for Sultanabad and Town
+const statusButton = document.getElementById('statusButton');
+const statusButtonTown = document.getElementById('statusButtonTown');
+const timerDiv = document.getElementById('timer');
+const timerDivTown = document.getElementById('timerTown');
+const onBtn = document.getElementById('onButton');
+const offBtn = document.getElementById('offButton');
+const onBtnTown = document.getElementById('onButtonTown');
+const offBtnTown = document.getElementById('offButtonTown');
+const downloadBtn = document.getElementById('downloadButton');
+const loadingText = document.getElementById('loading');
+const logTable = document.getElementById('logTable').querySelector('tbody');
+const lastInterruptionDiv = document.getElementById('lastInterruption');
+const lastInterruptionDivTown = document.getElementById('lastInterruptionTown');
+
+// New references for Greater Road and New Market
+const statusButtonGreaterRoad = document.getElementById('statusButtonGreaterRoad');
+const statusButtonNewMarket = document.getElementById('statusButtonNewMarket');
+const timerDivGreaterRoad = document.getElementById('timerGreaterRoad');
+const timerDivNewMarket = document.getElementById('timerNewMarket');
+const onBtnGreaterRoad = document.getElementById('onButtonGreaterRoad');
+const offBtnGreaterRoad = document.getElementById('offButtonGreaterRoad');
+const onBtnNewMarket = document.getElementById('onButtonNewMarket');
+const offBtnNewMarket = document.getElementById('offButtonNewMarket');
+const lastInterruptionDivGreaterRoad = document.getElementById('lastInterruptionGreaterRoad');
+const lastInterruptionDivNewMarket = document.getElementById('lastInterruptionNewMarket');
+
 
   let timerInterval = { timer: null };
   let timerIntervalTown = { timer: null };
+let timerIntervalGreaterRoad = { timer: null };
+let timerIntervalNewMarket = { timer: null };
 
   function animateButton(button, state) {
     button.style.transition = "transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), box-shadow 0.4s ease";
@@ -303,69 +352,74 @@ button:disabled {
   }
 
   async function handleButtonClick(statusDoc, logsCol, location, button, timerElement, onBtn, offBtn, lastInterruptionDoc, isOn) {
-    onBtn.disabled = true;
-    offBtn.disabled = true;
-    const now = new Date().toISOString();
-    if (isOn) {
-      await statusDoc.set({ currentStatus: "ON", f_on: now, f_off: null });
-    } else {
-      await statusDoc.set({ currentStatus: "OFF", f_on: null, f_off: now });
-    }
-    await logsCol.add({ action: isOn ? "ON" : "OFF", timestamp: now, location: location });
-    await updateLastInterruption(logsCol, lastInterruptionDoc, location, location === "Sultanabad" ? lastInterruptionDiv : lastInterruptionDivTown);
-    updateUI(button, timerElement, isOn ? "ON" : "OFF", now, onBtn, offBtn, location);
-    fetchLogs();
+  onBtn.disabled = true;
+  offBtn.disabled = true;
+  const now = new Date().toISOString();
+  if (isOn) {
+    await statusDoc.set({ currentStatus: "ON", f_on: now, f_off: null });
+  } else {
+    await statusDoc.set({ currentStatus: "OFF", f_on: null, f_off: now });
   }
+  await logsCol.add({ action: isOn ? "ON" : "OFF", timestamp: now, location: location });
+  await updateLastInterruption(logsCol, lastInterruptionDoc, location, location === "Sultanabad" ? lastInterruptionDiv : location === "Town" ? lastInterruptionDivTown : location === "Greater Road" ? lastInterruptionDivGreaterRoad : lastInterruptionDivNewMarket);
+  updateUI(button, timerElement, isOn ? "ON" : "OFF", now, onBtn, offBtn, location);
+  fetchLogs();
+}
+
 
   function updateUI(button, timerElement, state, time, onBtn, offBtn, location) {
-    animateButton(button, state);
-    if (state === "ON") {
-      button.style.backgroundColor = "green";
-      button.style.color = "white";
-      onBtn.disabled = true;
-      offBtn.disabled = false;
-      stopTimer(timerElement, location === "Sultanabad" ? timerInterval : timerIntervalTown);
-    } else {
-      button.style.backgroundColor = "red";
-      button.style.color = "white";
-      onBtn.disabled = false;
-      offBtn.disabled = true;
-      startTimer(timerElement, new Date(time), location === "Sultanabad" ? timerInterval : timerIntervalTown);
-    }
+  animateButton(button, state);
+  if (state === "ON") {
+    button.style.backgroundColor = "green";
+    button.style.color = "white";
+    onBtn.disabled = true;
+    offBtn.disabled = false;
+    stopTimer(timerElement, location === "Sultanabad" ? timerInterval : location === "Town" ? timerIntervalTown : location === "Greater Road" ? timerIntervalGreaterRoad : timerIntervalNewMarket);
+  } else {
+    button.style.backgroundColor = "red";
+    button.style.color = "white";
+    onBtn.disabled = false;
+    offBtn.disabled = true;
+    startTimer(timerElement, new Date(time), location === "Sultanabad" ? timerInterval : location === "Town" ? timerIntervalTown : location === "Greater Road" ? timerIntervalGreaterRoad : timerIntervalNewMarket);
   }
+}
+
 
 async function fetchLogs() {
-  const [snapshot1, snapshot2] = await Promise.all([
-    logsCol.orderBy('timestamp').get(), // Order logs in ascending order for Sultanabad
-    logsColTown.orderBy('timestamp').get() // Order logs in ascending order for Town
+  const [snapshot1, snapshot2, snapshot3, snapshot4] = await Promise.all([
+    logsCol.orderBy('timestamp').get(), // Sultanabad logs
+    logsColTown.orderBy('timestamp').get(), // Town logs
+    logsColGreaterRoad.orderBy('timestamp').get(), // Greater Road logs
+    logsColNewMarket.orderBy('timestamp').get() // New Market logs
   ]);
 
-  const allLogs = [...snapshot1.docs.map(doc => ({...doc.data(), location: "Sultanabad"})),
-                   ...snapshot2.docs.map(doc => ({...doc.data(), location: "Town"}))];
+  const allLogs = [
+    ...snapshot1.docs.map(doc => ({...doc.data(), location: "Sultanabad"})),
+    ...snapshot2.docs.map(doc => ({...doc.data(), location: "Town"})),
+    ...snapshot3.docs.map(doc => ({...doc.data(), location: "Greater Road"})),
+    ...snapshot4.docs.map(doc => ({...doc.data(), location: "New Market"}))
+  ];
 
-  allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)); // Ensure logs are sorted in ascending order
+  allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
   logTable.innerHTML = '';  // Clear the table first before repopulating
 
-  // Track the last OFF actions for both locations
   let lastOffSultanabad = null;
   let lastOffTown = null;
+  let lastOffGreaterRoad = null;
+  let lastOffNewMarket = null;
 
   allLogs.forEach(data => {
-    let interruptionTime = '--'; // Default to "--" if no interruption time
+    let interruptionTime = '--';
 
-    // Calculate the most recent "OFF" for the current location
-    let lastOffAction = data.location === "Sultanabad" ? lastOffSultanabad : lastOffTown;
+    let lastOffAction = data.location === "Sultanabad" ? lastOffSultanabad :
+                        data.location === "Town" ? lastOffTown :
+                        data.location === "Greater Road" ? lastOffGreaterRoad : lastOffNewMarket;
 
-    // Only calculate interruption time for "ON" actions and if there's a valid "OFF" action before it
     if (data.action === "ON" && lastOffAction) {
-      const offTime = new Date(lastOffAction.timestamp); // Get the timestamp of the last "OFF" action
-      const onTime = new Date(data.timestamp); // Get the timestamp of the current "ON" action
-
-      // Calculate the time difference in milliseconds
+      const offTime = new Date(lastOffAction.timestamp);
+      const onTime = new Date(data.timestamp);
       const diffMs = onTime - offTime;
-
-      // Ensure the difference is positive and calculate hours, minutes, seconds
       if (diffMs >= 0) {
         const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
         const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
@@ -374,23 +428,17 @@ async function fetchLogs() {
       }
     }
 
-    // Update the last "OFF" action for the location if this is an "OFF" action
     if (data.action === "OFF") {
-      if (data.location === "Sultanabad") {
-        lastOffSultanabad = data;
-      } else if (data.location === "Town") {
-        lastOffTown = data;
-      }
+      if (data.location === "Sultanabad") lastOffSultanabad = data;
+      else if (data.location === "Town") lastOffTown = data;
+      else if (data.location === "Greater Road") lastOffGreaterRoad = data;
+      else if (data.location === "New Market") lastOffNewMarket = data;
     }
 
-    // Format the date in DD/MM/YYYY format
     const logDate = new Date(data.timestamp);
-    const dateFormatted = logDate.toLocaleDateString('en-GB'); // 'en-GB' gives the format DD/MM/YYYY
-
-    // Format the time in 12-hour format (HH:MM:SS AM/PM)
+    const dateFormatted = logDate.toLocaleDateString('en-GB');
     const timeFormatted = logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
-    // Create a new row for the log entry
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${dateFormatted}</td>
@@ -400,11 +448,78 @@ async function fetchLogs() {
       <td>${interruptionTime}</td>
     `;
 
-    // Insert the row at the top of the table (prepend)
     logTable.prepend(row);
   });
 }
 
+
+async function fetchLogs() {
+  const [snapshot1, snapshot2, snapshot3, snapshot4] = await Promise.all([
+    logsCol.orderBy('timestamp').get(),         // Sultanabad logs
+    logsColTown.orderBy('timestamp').get(),     // Town logs
+    logsColGreaterRoad.orderBy('timestamp').get(), // Greater Road logs
+    logsColNewMarket.orderBy('timestamp').get()  // New Market logs
+  ]);
+
+  const allLogs = [
+    ...snapshot1.docs.map(doc => ({...doc.data(), location: "Sultanabad"})),
+    ...snapshot2.docs.map(doc => ({...doc.data(), location: "Town"})),
+    ...snapshot3.docs.map(doc => ({...doc.data(), location: "Greater Road"})),
+    ...snapshot4.docs.map(doc => ({...doc.data(), location: "New Market"}))
+  ];
+
+  // Sort logs by timestamp in ascending order
+  allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  logTable.innerHTML = '';  // Clear the table first before repopulating
+
+  let lastOffSultanabad = null;
+  let lastOffTown = null;
+  let lastOffGreaterRoad = null;
+  let lastOffNewMarket = null;
+
+  allLogs.forEach(data => {
+    let interruptionTime = '--';
+
+    let lastOffAction = data.location === "Sultanabad" ? lastOffSultanabad :
+                        data.location === "Town" ? lastOffTown :
+                        data.location === "Greater Road" ? lastOffGreaterRoad : lastOffNewMarket;
+
+    if (data.action === "ON" && lastOffAction) {
+      const offTime = new Date(lastOffAction.timestamp);
+      const onTime = new Date(data.timestamp);
+      const diffMs = onTime - offTime;
+      if (diffMs >= 0) {
+        const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
+        const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
+        const s = String(Math.floor((diffMs % 60000) / 1000)).padStart(2, '0');
+        interruptionTime = `${h}:${m}:${s}`;
+      }
+    }
+
+    if (data.action === "OFF") {
+      if (data.location === "Sultanabad") lastOffSultanabad = data;
+      else if (data.location === "Town") lastOffTown = data;
+      else if (data.location === "Greater Road") lastOffGreaterRoad = data;
+      else if (data.location === "New Market") lastOffNewMarket = data;
+    }
+
+    const logDate = new Date(data.timestamp);
+    const dateFormatted = logDate.toLocaleDateString('en-GB');
+    const timeFormatted = logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${dateFormatted}</td>
+      <td>${data.action}</td>
+      <td>${timeFormatted}</td>
+      <td>${data.location}</td>
+      <td>${interruptionTime}</td>
+    `;
+
+    logTable.prepend(row); // Add the log entry to the top of the table
+  });
+}
 
 
 
@@ -469,30 +584,44 @@ async function updateLastInterruption(logsCol, lastInterruptionDoc, location, la
 }
 
 
+
   // Button actions
   onBtn.onclick = () => handleButtonClick(statusDoc, logsCol, "Sultanabad", statusButton, timerDiv, onBtn, offBtn, lastInterruptionDoc, true);
   offBtn.onclick = () => handleButtonClick(statusDoc, logsCol, "Sultanabad", statusButton, timerDiv, onBtn, offBtn, lastInterruptionDoc, false);
   onBtnTown.onclick = () => handleButtonClick(statusDocTown, logsColTown, "Town", statusButtonTown, timerDivTown, onBtnTown, offBtnTown, lastInterruptionDocTown, true);
   offBtnTown.onclick = () => handleButtonClick(statusDocTown, logsColTown, "Town", statusButtonTown, timerDivTown, onBtnTown, offBtnTown, lastInterruptionDocTown, false);
+onBtnGreaterRoad.onclick = () => handleButtonClick(statusDocGreaterRoad, logsColGreaterRoad, "Greater Road", statusButtonGreaterRoad, timerGreaterRoad, onBtnGreaterRoad, offBtnGreaterRoad, lastInterruptionDocGreaterRoad, true);
+offBtnGreaterRoad.onclick = () => handleButtonClick(statusDocGreaterRoad, logsColGreaterRoad, "Greater Road", statusButtonGreaterRoad, timerGreaterRoad, onBtnGreaterRoad, offBtnGreaterRoad, lastInterruptionDocGreaterRoad, false);
+onBtnNewMarket.onclick = () => handleButtonClick(statusDocNewMarket, logsColNewMarket, "New Market", statusButtonNewMarket, timerNewMarket, onBtnNewMarket, offBtnNewMarket, lastInterruptionDocNewMarket, true);
+offBtnNewMarket.onclick = () => handleButtonClick(statusDocNewMarket, logsColNewMarket, "New Market", statusButtonNewMarket, timerNewMarket, onBtnNewMarket, offBtnNewMarket, lastInterruptionDocNewMarket, false);
 
 downloadBtn.onclick = async () => {
   loadingText.style.display = 'block';
   
-  let lastOffSultanabad = null; // Initialize for Sultanabad
-  let lastOffTown = null; // Initialize for Town
+  // Initialize last OFF actions for all locations
+  let lastOffSultanabad = null; 
+  let lastOffTown = null;
+  let lastOffGreaterRoad = null;
+  let lastOffNewMarket = null;
 
   try {
-    const [snapshot1, snapshot2] = await Promise.all([
-      logsCol.orderBy('timestamp').get(),
-      logsColTown.orderBy('timestamp').get()
+    // Fetch logs for all locations
+    const [snapshot1, snapshot2, snapshot3, snapshot4] = await Promise.all([
+      logsCol.orderBy('timestamp').get(),         // Sultanabad logs
+      logsColTown.orderBy('timestamp').get(),     // Town logs
+      logsColGreaterRoad.orderBy('timestamp').get(), // Greater Road logs
+      logsColNewMarket.orderBy('timestamp').get()  // New Market logs
     ]);
 
-    console.log("Snapshot1:", snapshot1);
-    console.log("Snapshot2:", snapshot2);
+    // Combine all logs
+    const allLogs = [
+      ...snapshot1.docs.map(doc => ({...doc.data(), location: "Sultanabad"})),
+      ...snapshot2.docs.map(doc => ({...doc.data(), location: "Town"})),
+      ...snapshot3.docs.map(doc => ({...doc.data(), location: "Greater Road"})),
+      ...snapshot4.docs.map(doc => ({...doc.data(), location: "New Market"}))
+    ];
 
-    const allLogs = [...snapshot1.docs.map(doc => ({...doc.data(), location: "Sultanabad"})),
-                     ...snapshot2.docs.map(doc => ({...doc.data(), location: "Town"}))];
-
+    // Sort logs by timestamp in ascending order
     allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
     // Prepare data for the Excel sheet
@@ -503,13 +632,25 @@ downloadBtn.onclick = async () => {
 
       // Calculate the interruption time
       let interruptionTime = '--'; // Default to "--" if no interruption time
-      let lastOffAction = data.location === "Sultanabad" ? lastOffSultanabad : lastOffTown;
+      let lastOffAction;
 
+      // Determine the last OFF action based on the location
+      if (data.location === "Sultanabad") {
+        lastOffAction = lastOffSultanabad;
+      } else if (data.location === "Town") {
+        lastOffAction = lastOffTown;
+      } else if (data.location === "Greater Road") {
+        lastOffAction = lastOffGreaterRoad;
+      } else if (data.location === "New Market") {
+        lastOffAction = lastOffNewMarket;
+      }
+
+      // Calculate the interruption time if ON action and there's a valid last OFF action
       if (data.action === "ON" && lastOffAction) {
         const offTime = new Date(lastOffAction.timestamp);
         const onTime = new Date(data.timestamp);
-
         const diffMs = onTime - offTime;
+
         if (diffMs >= 0) {
           const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
           const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
@@ -518,15 +659,20 @@ downloadBtn.onclick = async () => {
         }
       }
 
-      // Update the last "OFF" action for the location if this is an "OFF" action
+      // Update the last OFF action for the current location
       if (data.action === "OFF") {
         if (data.location === "Sultanabad") {
           lastOffSultanabad = data;
         } else if (data.location === "Town") {
           lastOffTown = data;
+        } else if (data.location === "Greater Road") {
+          lastOffGreaterRoad = data;
+        } else if (data.location === "New Market") {
+          lastOffNewMarket = data;
         }
       }
 
+      // Return the log data formatted for Excel
       return {
         Date: dateFormatted,
         Action: data.action,
@@ -555,11 +701,18 @@ downloadBtn.onclick = async () => {
   }
 };
 
-  fetchLogs();
+
+fetchLogs();
   fetchCurrentStatus(statusDoc, statusButton, timerDiv, onBtn, offBtn, "Sultanabad");
   fetchCurrentStatus(statusDocTown, statusButtonTown, timerDivTown, onBtnTown, offBtnTown, "Town");
+  fetchCurrentStatus(statusDocGreaterRoad, statusButtonGreaterRoad, timerDivGreaterRoad, onBtnGreaterRoad, offBtnGreaterRoad, "Greater Road");
+  fetchCurrentStatus(statusDocNewMarket, statusButtonNewMarket, timerDivNewMarket, onBtnNewMarket, offBtnNewMarket, "New Market");
+
   fetchLastInterruption(lastInterruptionDoc, lastInterruptionDiv);
   fetchLastInterruption(lastInterruptionDocTown, lastInterruptionDivTown);
+  fetchLastInterruption(lastInterruptionDocGreaterRoad, lastInterruptionDivGreaterRoad);
+  fetchLastInterruption(lastInterruptionDocNewMarket, lastInterruptionDivNewMarket);
+
 </script>
 
 </body>
