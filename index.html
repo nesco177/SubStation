@@ -1077,33 +1077,39 @@ async function shareLogs() {
 
     const excelFile = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
 
-    // Step 3: Create a Blob and trigger download
-    const blob = new Blob([excelFile], { type: 'application/octet-stream' });
-    const url = window.URL.createObjectURL(blob);
-    
-    // Trigger file download
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'logs.xlsx';
-    link.click();
-    window.URL.revokeObjectURL(url);
+    // Step 3: Create a Blob for sharing via the native Share API
+    const blob = new Blob([excelFile], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
-    // Step 4: Open Share Interface
+    // Step 4: Create a temporary URL for the Blob
+    const fileUrl = URL.createObjectURL(blob);
+
+    // Step 5: Check if the navigator.share() API is supported
     if (navigator.share) {
-      await navigator.share({
-        title: 'Logs File',
-        text: 'Here is the logs file you requested!',
-        url: url,  // Share the file URL
-      });
+      try {
+        // Share the file using the native Share API (Files is supported in some browsers)
+        await navigator.share({
+          title: 'Logs File',
+          text: 'Here is the logs file you requested!',
+          files: [new File([blob], "logs.xlsx", { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })],
+        });
+      } catch (error) {
+        // If sharing fails, log the error and inform the user
+        console.error('Error sharing logs:', error);
+        alert('Error sharing logs. Please check console for more details.');
+      }
     } else {
-      alert("Share functionality is not supported by your browser.");
+      // Provide a fallback: download the file directly if sharing is not supported
+      const downloadLink = document.createElement('a');
+      downloadLink.href = fileUrl;
+      downloadLink.download = "logs.xlsx";
+      downloadLink.click();
+      alert("Your browser does not support the share functionality. The file will be downloaded instead.");
     }
   } catch (error) {
     console.error('Error sharing logs:', error);
-    alert('Error sharing logs. See console for details.');
+    alert('Error sharing logs. Please check console for more details.');
   }
 }
-
 
   
 </script>
