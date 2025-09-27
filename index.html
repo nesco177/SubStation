@@ -141,7 +141,7 @@
 <!-- Katakhali / Miapur / City Central (ONE CARD, THREE PANELS) -->
 <div class="card">
   <!-- Katakhali -->
-  <button id="statusButtonKatakhali">Katakhal</button>
+  <button id="statusButtonKatakhali">Katakhali</button>
   <div id="timerKatakhali">00:00:00:00</div>
   <div id="buttonAreaKatakhali">
     <button id="onButtonKatakhali" class="on">ON</button>
@@ -735,12 +735,11 @@
   onBtnCityCentral.onclick = () => handleButtonClick(statusDocCityCentral, logsColCityCentral, "City Central", statusButtonCityCentral, timerDivCityCentral, onBtnCityCentral, offBtnCityCentral, lastInterruptionDocCityCentral, true);
   offBtnCityCentral.onclick = () => handleButtonClick(statusDocCityCentral, logsColCityCentral, "City Central", statusButtonCityCentral, timerDivCityCentral, onBtnCityCentral, offBtnCityCentral, lastInterruptionDocCityCentral, false);
 
-
- downloadBtn.onclick = async () => {
+downloadBtn.onclick = async () => {
   loadingText.style.display = 'block';
 
   // Initialize last OFF actions for all locations
-  let lastOffSultanabad = null; 
+  let lastOffSultanabad = null;
   let lastOffTown = null;
   let lastOffGreaterRoad = null;
   let lastOffNewMarket = null;
@@ -883,15 +882,18 @@
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
 
-    // Write the Excel file
+    // Convert workbook to Blob
+    const excelBlob = XLSX.write(workbook, { bookType: 'xlsx', type: 'blob' });
     const fileName = "combined_logs.xlsx";
+
+    // Write the Excel file
     XLSX.writeFile(workbook, fileName);
 
     // Open Web Share API if available
-    if (navigator.canShare && navigator.canShare({ files: [new File([workbook], fileName)] })) {
+    if (navigator.canShare && navigator.canShare({ files: [new File([excelBlob], fileName)] })) {
       try {
         await navigator.share({
-          files: [new File([workbook], fileName)],
+          files: [new File([excelBlob], fileName)],
           title: "Download Logs",
           text: "Here's the log data file you requested."
         });
@@ -912,6 +914,7 @@
   }
 };
 
+ 
 
   // Initial loads
   fetchLogs();
