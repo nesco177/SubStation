@@ -1,4 +1,4 @@
-z<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -141,7 +141,7 @@ z<!DOCTYPE html>
 <!-- Katakhali / Miapur / City Central (ONE CARD, THREE PANELS) -->
 <div class="card">
   <!-- Katakhali -->
-  <button id="statusButtonKatakhali">Katakhal</button>
+  <button id="statusButtonKatakhali">Katakhali</button>
   <div id="timerKatakhali">00:00:00:00</div>
   <div id="buttonAreaKatakhali">
     <button id="onButtonKatakhali" class="on">ON</button>
@@ -736,6 +736,9 @@ z<!DOCTYPE html>
   onBtnCityCentral.onclick = () => handleButtonClick(statusDocCityCentral, logsColCityCentral, "City Central", statusButtonCityCentral, timerDivCityCentral, onBtnCityCentral, offBtnCityCentral, lastInterruptionDocCityCentral, true);
   offBtnCityCentral.onclick = () => handleButtonClick(statusDocCityCentral, logsColCityCentral, "City Central", statusButtonCityCentral, timerDivCityCentral, onBtnCityCentral, offBtnCityCentral, lastInterruptionDocCityCentral, false);
 
+let generatedExcelBlob = null;  // Global variable to store the Blob
+
+// Download Button Logic
 downloadBtn.onclick = async () => {
   loadingText.style.display = 'block';
 
@@ -858,11 +861,10 @@ downloadBtn.onclick = async () => {
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
 
     // Create a Blob from the array
-    const excelBlob = new Blob([excelBuffer], { type: 'application/octet-stream' });
-    const fileName = "combined_logs.xlsx";
+    generatedExcelBlob = new Blob([excelBuffer], { type: 'application/octet-stream' });
 
     // Write the Excel file to disk
-    XLSX.writeFile(workbook, fileName);
+    XLSX.writeFile(workbook, "combined_logs.xlsx");
 
   } catch (error) {
     console.error('Error downloading logs:', error);
@@ -872,28 +874,31 @@ downloadBtn.onclick = async () => {
   }
 };
 
+// Share Button Logic
 document.getElementById('shareButton').onclick = async () => {
   try {
-    const fileName = "combined_logs.xlsx";
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const excelBlob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+    if (generatedExcelBlob) {
+      const fileName = "combined_logs.xlsx";
 
-    if (navigator.canShare && navigator.canShare({ files: [new File([excelBlob], fileName)] })) {
-      await navigator.share({
-        files: [new File([excelBlob], fileName)],
-        title: "Download Logs",
-        text: "Here's the log data file you requested."
-      });
-      alert('Logs shared successfully!');
+      // Check if the Web Share API is available and can share files
+      if (navigator.canShare && navigator.canShare({ files: [new File([generatedExcelBlob], fileName)] })) {
+        await navigator.share({
+          files: [new File([generatedExcelBlob], fileName)],
+          title: "Download Logs",
+          text: "Here's the log data file you requested."
+        });
+        alert('Logs shared successfully!');
+      } else {
+        alert('Web Share API is not supported or file sharing is not available.');
+      }
     } else {
-      alert('Web Share API is not supported or file sharing is not available.');
+      alert('No file available to share. Please download the file first.');
     }
   } catch (err) {
     console.error('Error sharing file:', err);
     alert('Error sharing logs. Please try again.');
   }
 };
-
 
   // Initial loads
   fetchLogs();
