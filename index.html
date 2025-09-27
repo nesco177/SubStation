@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+z<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -255,11 +255,12 @@
 </div>
 
 <br>
+<!-- Download and Share Buttons -->
 <button id="downloadButton" class="download">Download Logs (Excel)</button>
+<button id="shareButton" class="download">Share Logs</button>
 <p id="loading">Downloading...</p>
 <!-- New: Upload and Reset Buttons under Download -->
 <button id="resetButton" class="reset">Reset</button>
-
 
 
 
@@ -863,23 +864,6 @@ downloadBtn.onclick = async () => {
     // Write the Excel file to disk
     XLSX.writeFile(workbook, fileName);
 
-    // Check if the Web Share API is available
-    if (navigator.canShare && navigator.canShare({ files: [new File([excelBlob], fileName)] })) {
-      try {
-        await navigator.share({
-          files: [new File([excelBlob], fileName)],
-          title: "Download Logs",
-          text: "Here's the log data file you requested."
-        });
-        alert('Logs shared successfully!');
-      } catch (err) {
-        console.error('Error sharing file:', err);
-        alert('Error sharing logs. Please try again.');
-      }
-    } else {
-      alert('Web Share API is not supported or file sharing is not available.');
-    }
-
   } catch (error) {
     console.error('Error downloading logs:', error);
     alert('Error downloading logs. See console for details.');
@@ -888,7 +872,28 @@ downloadBtn.onclick = async () => {
   }
 };
 
- 
+document.getElementById('shareButton').onclick = async () => {
+  try {
+    const fileName = "combined_logs.xlsx";
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const excelBlob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+
+    if (navigator.canShare && navigator.canShare({ files: [new File([excelBlob], fileName)] })) {
+      await navigator.share({
+        files: [new File([excelBlob], fileName)],
+        title: "Download Logs",
+        text: "Here's the log data file you requested."
+      });
+      alert('Logs shared successfully!');
+    } else {
+      alert('Web Share API is not supported or file sharing is not available.');
+    }
+  } catch (err) {
+    console.error('Error sharing file:', err);
+    alert('Error sharing logs. Please try again.');
+  }
+};
+
 
   // Initial loads
   fetchLogs();
