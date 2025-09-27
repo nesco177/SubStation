@@ -141,7 +141,7 @@
 <!-- Katakhali / Miapur / City Central (ONE CARD, THREE PANELS) -->
 <div class="card">
   <!-- Katakhali -->
-  <button id="statusButtonKatakhali">Katakhali</button>
+  <button id="statusButtonKatakhali">Katakhal</button>
   <div id="timerKatakhali">00:00:00:00</div>
   <div id="buttonAreaKatakhali">
     <button id="onButtonKatakhali" class="on">ON</button>
@@ -743,68 +743,47 @@ downloadBtn.onclick = async () => {
   let lastOffTown = null;
   let lastOffGreaterRoad = null;
   let lastOffNewMarket = null;
-  // NEW:
   let lastOffOmar = null;
   let lastOffNagar = null;
   let lastOffData = null;
-  // NEW: three-in-one
   let lastOffKatakhali = null;
   let lastOffMiapur = null;
   let lastOffCityCentral = null;
 
-  // Track last ON for specials (for OFF-row interruption)
   let lastOnKatakhali = null;
   let lastOnMiapur = null;
   let lastOnCityCentral = null;
 
   try {
-    // Fetch logs for all locations
-    const [snapshot1, snapshot2, snapshot3, snapshot4,
-           snapshot5, snapshot6, snapshot7,
-           snapshot8, snapshot9, snapshot10] = await Promise.all([
-      logsCol.orderBy('timestamp').get(),         // Sultanabad logs
-      logsColTown.orderBy('timestamp').get(),     // Town logs
-      logsColGreaterRoad.orderBy('timestamp').get(), // Greater Road logs
-      logsColNewMarket.orderBy('timestamp').get(),  // New Market logs
-      // NEW:
-      logsColOmar.orderBy('timestamp').get(),
-      logsColNagar.orderBy('timestamp').get(),
-      logsColData.orderBy('timestamp').get(),
-      // NEW: three-in-one
-      logsColKatakhali.orderBy('timestamp').get(),
-      logsColMiapur.orderBy('timestamp').get(),
+    const [snapshot1, snapshot2, snapshot3, snapshot4, snapshot5, snapshot6, snapshot7, snapshot8, snapshot9, snapshot10] = await Promise.all([
+      logsCol.orderBy('timestamp').get(), logsColTown.orderBy('timestamp').get(), logsColGreaterRoad.orderBy('timestamp').get(),
+      logsColNewMarket.orderBy('timestamp').get(), logsColOmar.orderBy('timestamp').get(), logsColNagar.orderBy('timestamp').get(),
+      logsColData.orderBy('timestamp').get(), logsColKatakhali.orderBy('timestamp').get(), logsColMiapur.orderBy('timestamp').get(),
       logsColCityCentral.orderBy('timestamp').get()
     ]);
 
-    // Combine all logs
     const allLogs = [
-      ...snapshot1.docs.map(doc => ({...doc.data(), location: "Sultanabad"})),
-      ...snapshot2.docs.map(doc => ({...doc.data(), location: "Town"})),
-      ...snapshot3.docs.map(doc => ({...doc.data(), location: "Greater Road"})),
-      ...snapshot4.docs.map(doc => ({...doc.data(), location: "New Market"})),
-      // NEW:
-      ...snapshot5.docs.map(doc => ({...doc.data(), location: "Omar Plaza"})),
-      ...snapshot6.docs.map(doc => ({...doc.data(), location: "Nagar Bhaban"})),
-      ...snapshot7.docs.map(doc => ({...doc.data(), location: "Data Center"})),
-      // NEW: three-in-one
-      ...snapshot8.docs.map(doc => ({...doc.data(), location: "Katakhali"})),
-      ...snapshot9.docs.map(doc => ({...doc.data(), location: "Miapur"})),
-      ...snapshot10.docs.map(doc => ({...doc.data(), location: "City Central"}))
+      ...snapshot1.docs.map(doc => ({ ...doc.data(), location: "Sultanabad" })),
+      ...snapshot2.docs.map(doc => ({ ...doc.data(), location: "Town" })),
+      ...snapshot3.docs.map(doc => ({ ...doc.data(), location: "Greater Road" })),
+      ...snapshot4.docs.map(doc => ({ ...doc.data(), location: "New Market" })),
+      ...snapshot5.docs.map(doc => ({ ...doc.data(), location: "Omar Plaza" })),
+      ...snapshot6.docs.map(doc => ({ ...doc.data(), location: "Nagar Bhaban" })),
+      ...snapshot7.docs.map(doc => ({ ...doc.data(), location: "Data Center" })),
+      ...snapshot8.docs.map(doc => ({ ...doc.data(), location: "Katakhali" })),
+      ...snapshot9.docs.map(doc => ({ ...doc.data(), location: "Miapur" })),
+      ...snapshot10.docs.map(doc => ({ ...doc.data(), location: "City Central" }))
     ];
 
-    // Sort logs by timestamp in ascending order
     allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-    // Prepare data for the Excel sheet
     const logsForExcel = allLogs.map(data => {
       const logDate = new Date(data.timestamp);
-      const dateFormatted = logDate.toLocaleDateString('en-GB'); // 'DD/MM/YYYY'
+      const dateFormatted = logDate.toLocaleDateString('en-GB');
       const timeFormatted = logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
-      // Calculate the interruption time
-      let interruptionTime = '--'; // Default to "--" if no interruption time
+      let interruptionTime = '--';
 
-      // DEFAULT: interruption on ON rows (last OFF -> this ON) as HH:MM:SS
       if (data.action === "ON") {
         let lastOffAction;
         if (data.location === "Sultanabad") lastOffAction = lastOffSultanabad;
@@ -818,8 +797,7 @@ downloadBtn.onclick = async () => {
         else if (data.location === "Miapur") lastOffAction = lastOffMiapur;
         else if (data.location === "City Central") lastOffAction = lastOffCityCentral;
 
-        const isSpecial = (data.location === "Katakhali" || data.location === "Miapur" || data.location === "City Central");
-        if (!isSpecial && lastOffAction) {
+        if (lastOffAction) {
           const offTime = new Date(lastOffAction.timestamp);
           const onTime = new Date(data.timestamp);
           const diffMs = onTime - offTime;
@@ -832,24 +810,18 @@ downloadBtn.onclick = async () => {
         }
       }
 
-      // SPECIALS: interruption on OFF rows (last ON -> this OFF) as Day:Hour:Min:Sec
       if (data.action === "OFF" && (data.location === "Katakhali" || data.location === "Miapur" || data.location === "City Central")) {
-        const lastOnAction =
-          data.location === "Katakhali" ? lastOnKatakhali :
-          data.location === "Miapur" ? lastOnMiapur :
-          lastOnCityCentral;
-
+        const lastOnAction = data.location === "Katakhali" ? lastOnKatakhali : data.location === "Miapur" ? lastOnMiapur : lastOnCityCentral;
         if (lastOnAction) {
           const onTime = new Date(lastOnAction.timestamp);
           const offTime = new Date(data.timestamp);
           const diffMs = offTime - onTime;
           if (diffMs >= 0) {
-            interruptionTime = formatDHMS(diffMs); // D:HH:MM:SS
+            interruptionTime = formatDHMS(diffMs);
           }
         }
       }
 
-      // Update trackers
       if (data.action === "OFF") {
         if (data.location === "Sultanabad") lastOffSultanabad = data;
         else if (data.location === "Town") lastOffTown = data;
@@ -867,7 +839,6 @@ downloadBtn.onclick = async () => {
         else if (data.location === "City Central") lastOnCityCentral = data;
       }
 
-      // Return the log data formatted for Excel
       return {
         Date: dateFormatted,
         Action: data.action,
@@ -882,14 +853,17 @@ downloadBtn.onclick = async () => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
 
-    // Convert workbook to Blob
-    const excelBlob = XLSX.write(workbook, { bookType: 'xlsx', type: 'blob' });
+    // Convert workbook to an array of bytes (buffer)
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+
+    // Create a Blob from the array
+    const excelBlob = new Blob([excelBuffer], { type: 'application/octet-stream' });
     const fileName = "combined_logs.xlsx";
 
-    // Write the Excel file
+    // Write the Excel file to disk
     XLSX.writeFile(workbook, fileName);
 
-    // Open Web Share API if available
+    // Check if the Web Share API is available
     if (navigator.canShare && navigator.canShare({ files: [new File([excelBlob], fileName)] })) {
       try {
         await navigator.share({
