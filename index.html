@@ -257,7 +257,6 @@
 <br>
 <!-- Download and Share Buttons -->
 <button id="downloadButton" class="download">Download Logs (Excel)</button>
-<button id="shareButton" class="download">Share Logs</button>
 <p id="loading">Downloading...</p>
 <!-- New: Upload and Reset Buttons under Download -->
 <button id="resetButton" class="reset">Reset</button>
@@ -860,43 +859,21 @@ downloadBtn.onclick = async () => {
     // Convert workbook to an array of bytes (buffer)
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
 
-    // Create a Blob from the array and store it globally
+    // Create a Blob from the array
     generatedExcelBlob = new Blob([excelBuffer], { type: 'application/octet-stream' });
 
-    // Write the Excel file to disk
-    XLSX.writeFile(workbook, "combined_logs.xlsx");
+    // Get the current date in DD.MM.YYYY format for the filename
+    const currentDate = new Date();
+    const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}.${String(currentDate.getMonth() + 1).padStart(2, '0')}.${currentDate.getFullYear()}`;
+
+    // Write the Excel file to disk with the formatted date as the filename
+    XLSX.writeFile(workbook, `${formattedDate}.xlsx`);
 
   } catch (error) {
     console.error('Error downloading logs:', error);
     alert('Error downloading logs. See console for details.');
   } finally {
     loadingText.style.display = 'none';
-  }
-};
-
-// Share Button Logic
-document.getElementById('shareButton').onclick = async () => {
-  try {
-    if (generatedExcelBlob) {
-      const fileName = "combined_logs.xlsx";
-
-      // Check if the Web Share API is available and can share files
-      if (navigator.canShare && navigator.canShare({ files: [new File([generatedExcelBlob], fileName)] })) {
-        await navigator.share({
-          files: [new File([generatedExcelBlob], fileName)],
-          title: "Download Logs",
-          text: "Here's the log data file you requested."
-        });
-        alert('Logs shared successfully!');
-      } else {
-        alert('Web Share API is not supported or file sharing is not available.');
-      }
-    } else {
-      alert('No file available to share. Please download the file first.');
-    }
-  } catch (err) {
-    console.error('Error sharing file:', err);
-    alert('Error sharing logs. Please try again.');
   }
 };
 
