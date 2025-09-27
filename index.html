@@ -913,60 +913,67 @@ downloadBtn.onclick = async () => {
   fetchLastInterruption(lastInterruptionDocCityCentral, lastInterruptionDivCityCentral);
   
 // New: Reset Button Listener
-document.getElementById('resetButton').addEventListener('click', resetLogs);
+document.getElementById('resetButton').addEventListener('click', async () => {
+  // Prompt the user for the password
+  const password = prompt("Enter the password:");
 
-// New: Reset Logs Function (Clear All Logs from Multiple Collections and Refresh)
-async function resetLogs() {
-  try {
-    // List all collections that you want to reset (add more collections as needed)
-    const collections = [
-      'f1_logs',
-      'f2_logs',
-      'f3_logs',
-      'f4_logs',
-      'f5_logs',
-      'f6_logs',
-      'f7_logs',
-      'f8_logs',
-      'f9_logs',
-      'f10_logs'
-    ];
+  // Check if the password is correct
+  if (password === "rst") {
+    try {
+      // List all collections that you want to reset (add more collections as needed)
+      const collections = [
+        'f1_logs',
+        'f2_logs',
+        'f3_logs',
+        'f4_logs',
+        'f5_logs',
+        'f6_logs',
+        'f7_logs',
+        'f8_logs',
+        'f9_logs',
+        'f10_logs'
+      ];
 
-    // Loop through each collection and delete the logs
-    const deletePromises = collections.map(async (collection) => {
-      const logsSnapshot = await db.collection(collection).get();
+      // Loop through each collection and delete the logs
+      const deletePromises = collections.map(async (collection) => {
+        const logsSnapshot = await db.collection(collection).get();
 
-      if (logsSnapshot.empty) {
-        console.log(`${collection} has no logs to delete.`);
-        return;
-      }
+        if (logsSnapshot.empty) {
+          console.log(`${collection} has no logs to delete.`);
+          return;
+        }
 
-      const batch = db.batch();
-      logsSnapshot.docs.forEach((doc) => {
-        batch.delete(doc.ref);  // Add delete operation to the batch
+        const batch = db.batch();
+        logsSnapshot.docs.forEach((doc) => {
+          batch.delete(doc.ref);  // Add delete operation to the batch
+        });
+
+        // Commit the batch deletion
+        await batch.commit();
+        console.log(`${collection} logs deleted.`);
       });
 
-      // Commit the batch deletion
-      await batch.commit();
-      console.log(`${collection} logs deleted.`);
-    });
+      // Wait for all deletions to complete
+      await Promise.all(deletePromises);
 
-    // Wait for all deletions to complete
-    await Promise.all(deletePromises);
+      // Clear the table in the DOM
+      const logTableBody = document.querySelector('#logTable tbody');
+      logTableBody.innerHTML = ''; // Clear the table body
 
-    // Clear the table in the DOM
-    const logTableBody = document.querySelector('#logTable tbody');
-    logTableBody.innerHTML = ''; // Clear the table body
+      alert('All logs from all collections have been deleted.');
 
-    alert('All logs from all collections have been deleted.');
-
-    // Refresh the page to reflect changes
-    location.reload();
-  } catch (error) {
-    console.error('Error resetting logs:', error);
-    alert('An error occurred while resetting logs.');
+      // Refresh the page to reflect changes
+      location.reload();
+    } catch (error) {
+      console.error('Error resetting logs:', error);
+      alert('An error occurred while resetting logs.');
+    }
+  } else {
+    // If the password is incorrect, show an alert
+    alert("Incorrect password. Logs will not be reset.");
   }
-}
+});
+
 
   
 </script>
