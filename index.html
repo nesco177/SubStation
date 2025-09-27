@@ -737,163 +737,180 @@
 
 
  downloadBtn.onclick = async () => {
-    loadingText.style.display = 'block';
-    
-    // Initialize last OFF actions for all locations
-    let lastOffSultanabad = null; 
-    let lastOffTown = null;
-    let lastOffGreaterRoad = null;
-    let lastOffNewMarket = null;
-    // NEW:
-    let lastOffOmar = null;
-    let lastOffNagar = null;
-    let lastOffData = null;
-    // NEW: three-in-one
-    let lastOffKatakhali = null;
-    let lastOffMiapur = null;
-    let lastOffCityCentral = null;
+  loadingText.style.display = 'block';
 
-    // Track last ON for specials (for OFF-row interruption)
-    let lastOnKatakhali = null;
-    let lastOnMiapur = null;
-    let lastOnCityCentral = null;
+  // Initialize last OFF actions for all locations
+  let lastOffSultanabad = null; 
+  let lastOffTown = null;
+  let lastOffGreaterRoad = null;
+  let lastOffNewMarket = null;
+  // NEW:
+  let lastOffOmar = null;
+  let lastOffNagar = null;
+  let lastOffData = null;
+  // NEW: three-in-one
+  let lastOffKatakhali = null;
+  let lastOffMiapur = null;
+  let lastOffCityCentral = null;
 
-    try {
-      // Fetch logs for all locations
-      const [snapshot1, snapshot2, snapshot3, snapshot4,
-             snapshot5, snapshot6, snapshot7,
-             snapshot8, snapshot9, snapshot10] = await Promise.all([
-        logsCol.orderBy('timestamp').get(),         // Sultanabad logs
-        logsColTown.orderBy('timestamp').get(),     // Town logs
-        logsColGreaterRoad.orderBy('timestamp').get(), // Greater Road logs
-        logsColNewMarket.orderBy('timestamp').get(),  // New Market logs
-        // NEW:
-        logsColOmar.orderBy('timestamp').get(),
-        logsColNagar.orderBy('timestamp').get(),
-        logsColData.orderBy('timestamp').get(),
-        // NEW: three-in-one
-        logsColKatakhali.orderBy('timestamp').get(),
-        logsColMiapur.orderBy('timestamp').get(),
-        logsColCityCentral.orderBy('timestamp').get()
-      ]);
+  // Track last ON for specials (for OFF-row interruption)
+  let lastOnKatakhali = null;
+  let lastOnMiapur = null;
+  let lastOnCityCentral = null;
 
-      // Combine all logs
-      const allLogs = [
-        ...snapshot1.docs.map(doc => ({...doc.data(), location: "Sultanabad"})),
-        ...snapshot2.docs.map(doc => ({...doc.data(), location: "Town"})),
-        ...snapshot3.docs.map(doc => ({...doc.data(), location: "Greater Road"})),
-        ...snapshot4.docs.map(doc => ({...doc.data(), location: "New Market"})),
-        // NEW:
-        ...snapshot5.docs.map(doc => ({...doc.data(), location: "Omar Plaza"})),
-        ...snapshot6.docs.map(doc => ({...doc.data(), location: "Nagar Bhaban"})),
-        ...snapshot7.docs.map(doc => ({...doc.data(), location: "Data Center"})),
-        // NEW: three-in-one
-        ...snapshot8.docs.map(doc => ({...doc.data(), location: "Katakhali"})),
-        ...snapshot9.docs.map(doc => ({...doc.data(), location: "Miapur"})),
-        ...snapshot10.docs.map(doc => ({...doc.data(), location: "City Central"}))
-      ];
+  try {
+    // Fetch logs for all locations
+    const [snapshot1, snapshot2, snapshot3, snapshot4,
+           snapshot5, snapshot6, snapshot7,
+           snapshot8, snapshot9, snapshot10] = await Promise.all([
+      logsCol.orderBy('timestamp').get(),         // Sultanabad logs
+      logsColTown.orderBy('timestamp').get(),     // Town logs
+      logsColGreaterRoad.orderBy('timestamp').get(), // Greater Road logs
+      logsColNewMarket.orderBy('timestamp').get(),  // New Market logs
+      // NEW:
+      logsColOmar.orderBy('timestamp').get(),
+      logsColNagar.orderBy('timestamp').get(),
+      logsColData.orderBy('timestamp').get(),
+      // NEW: three-in-one
+      logsColKatakhali.orderBy('timestamp').get(),
+      logsColMiapur.orderBy('timestamp').get(),
+      logsColCityCentral.orderBy('timestamp').get()
+    ]);
 
-      // Sort logs by timestamp in ascending order
-      allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    // Combine all logs
+    const allLogs = [
+      ...snapshot1.docs.map(doc => ({...doc.data(), location: "Sultanabad"})),
+      ...snapshot2.docs.map(doc => ({...doc.data(), location: "Town"})),
+      ...snapshot3.docs.map(doc => ({...doc.data(), location: "Greater Road"})),
+      ...snapshot4.docs.map(doc => ({...doc.data(), location: "New Market"})),
+      // NEW:
+      ...snapshot5.docs.map(doc => ({...doc.data(), location: "Omar Plaza"})),
+      ...snapshot6.docs.map(doc => ({...doc.data(), location: "Nagar Bhaban"})),
+      ...snapshot7.docs.map(doc => ({...doc.data(), location: "Data Center"})),
+      // NEW: three-in-one
+      ...snapshot8.docs.map(doc => ({...doc.data(), location: "Katakhali"})),
+      ...snapshot9.docs.map(doc => ({...doc.data(), location: "Miapur"})),
+      ...snapshot10.docs.map(doc => ({...doc.data(), location: "City Central"}))
+    ];
 
-      // Prepare data for the Excel sheet
-      const logsForExcel = allLogs.map(data => {
-        const logDate = new Date(data.timestamp);
-        const dateFormatted = logDate.toLocaleDateString('en-GB'); // 'DD/MM/YYYY'
-        const timeFormatted = logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    // Sort logs by timestamp in ascending order
+    allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        // Calculate the interruption time
-        let interruptionTime = '--'; // Default to "--" if no interruption time
+    // Prepare data for the Excel sheet
+    const logsForExcel = allLogs.map(data => {
+      const logDate = new Date(data.timestamp);
+      const dateFormatted = logDate.toLocaleDateString('en-GB'); // 'DD/MM/YYYY'
+      const timeFormatted = logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
-        // DEFAULT: interruption on ON rows (last OFF -> this ON) as HH:MM:SS
-        if (data.action === "ON") {
-          let lastOffAction;
-          if (data.location === "Sultanabad") lastOffAction = lastOffSultanabad;
-          else if (data.location === "Town") lastOffAction = lastOffTown;
-          else if (data.location === "Greater Road") lastOffAction = lastOffGreaterRoad;
-          else if (data.location === "New Market") lastOffAction = lastOffNewMarket;
-          else if (data.location === "Omar Plaza") lastOffAction = lastOffOmar;
-          else if (data.location === "Nagar Bhaban") lastOffAction = lastOffNagar;
-          else if (data.location === "Data Center") lastOffAction = lastOffData;
-          else if (data.location === "Katakhali") lastOffAction = lastOffKatakhali;
-          else if (data.location === "Miapur") lastOffAction = lastOffMiapur;
-          else if (data.location === "City Central") lastOffAction = lastOffCityCentral;
+      // Calculate the interruption time
+      let interruptionTime = '--'; // Default to "--" if no interruption time
 
-          const isSpecial = (data.location === "Katakhali" || data.location === "Miapur" || data.location === "City Central");
-          if (!isSpecial && lastOffAction) {
-            const offTime = new Date(lastOffAction.timestamp);
-            const onTime = new Date(data.timestamp);
-            const diffMs = onTime - offTime;
-            if (diffMs >= 0) {
-              const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
-              const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
-              const s = String(Math.floor((diffMs % 60000) / 1000)).padStart(2, '0');
-              interruptionTime = `${h}:${m}:${s}`;
-            }
+      // DEFAULT: interruption on ON rows (last OFF -> this ON) as HH:MM:SS
+      if (data.action === "ON") {
+        let lastOffAction;
+        if (data.location === "Sultanabad") lastOffAction = lastOffSultanabad;
+        else if (data.location === "Town") lastOffAction = lastOffTown;
+        else if (data.location === "Greater Road") lastOffAction = lastOffGreaterRoad;
+        else if (data.location === "New Market") lastOffAction = lastOffNewMarket;
+        else if (data.location === "Omar Plaza") lastOffAction = lastOffOmar;
+        else if (data.location === "Nagar Bhaban") lastOffAction = lastOffNagar;
+        else if (data.location === "Data Center") lastOffAction = lastOffData;
+        else if (data.location === "Katakhali") lastOffAction = lastOffKatakhali;
+        else if (data.location === "Miapur") lastOffAction = lastOffMiapur;
+        else if (data.location === "City Central") lastOffAction = lastOffCityCentral;
+
+        const isSpecial = (data.location === "Katakhali" || data.location === "Miapur" || data.location === "City Central");
+        if (!isSpecial && lastOffAction) {
+          const offTime = new Date(lastOffAction.timestamp);
+          const onTime = new Date(data.timestamp);
+          const diffMs = onTime - offTime;
+          if (diffMs >= 0) {
+            const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
+            const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
+            const s = String(Math.floor((diffMs % 60000) / 1000)).padStart(2, '0');
+            interruptionTime = `${h}:${m}:${s}`;
           }
         }
+      }
 
-        // SPECIALS: interruption on OFF rows (last ON -> this OFF) as Day:Hour:Min:Sec
-        if (data.action === "OFF" && (data.location === "Katakhali" || data.location === "Miapur" || data.location === "City Central")) {
-          const lastOnAction =
-            data.location === "Katakhali" ? lastOnKatakhali :
-            data.location === "Miapur" ? lastOnMiapur :
-            lastOnCityCentral;
+      // SPECIALS: interruption on OFF rows (last ON -> this OFF) as Day:Hour:Min:Sec
+      if (data.action === "OFF" && (data.location === "Katakhali" || data.location === "Miapur" || data.location === "City Central")) {
+        const lastOnAction =
+          data.location === "Katakhali" ? lastOnKatakhali :
+          data.location === "Miapur" ? lastOnMiapur :
+          lastOnCityCentral;
 
-          if (lastOnAction) {
-            const onTime = new Date(lastOnAction.timestamp);
-            const offTime = new Date(data.timestamp);
-            const diffMs = offTime - onTime;
-            if (diffMs >= 0) {
-              interruptionTime = formatDHMS(diffMs); // D:HH:MM:SS
-            }
+        if (lastOnAction) {
+          const onTime = new Date(lastOnAction.timestamp);
+          const offTime = new Date(data.timestamp);
+          const diffMs = offTime - onTime;
+          if (diffMs >= 0) {
+            interruptionTime = formatDHMS(diffMs); // D:HH:MM:SS
           }
         }
+      }
 
-        // Update trackers
-        if (data.action === "OFF") {
-          if (data.location === "Sultanabad") lastOffSultanabad = data;
-          else if (data.location === "Town") lastOffTown = data;
-          else if (data.location === "Greater Road") lastOffGreaterRoad = data;
-          else if (data.location === "New Market") lastOffNewMarket = data;
-          else if (data.location === "Omar Plaza") lastOffOmar = data;
-          else if (data.location === "Nagar Bhaban") lastOffNagar = data;
-          else if (data.location === "Data Center") lastOffData = data;
-          else if (data.location === "Katakhali") lastOffKatakhali = data;
-          else if (data.location === "Miapur") lastOffMiapur = data;
-          else if (data.location === "City Central") lastOffCityCentral = data;
-        } else if (data.action === "ON") {
-          if (data.location === "Katakhali") lastOnKatakhali = data;
-          else if (data.location === "Miapur") lastOnMiapur = data;
-          else if (data.location === "City Central") lastOnCityCentral = data;
-        }
+      // Update trackers
+      if (data.action === "OFF") {
+        if (data.location === "Sultanabad") lastOffSultanabad = data;
+        else if (data.location === "Town") lastOffTown = data;
+        else if (data.location === "Greater Road") lastOffGreaterRoad = data;
+        else if (data.location === "New Market") lastOffNewMarket = data;
+        else if (data.location === "Omar Plaza") lastOffOmar = data;
+        else if (data.location === "Nagar Bhaban") lastOffNagar = data;
+        else if (data.location === "Data Center") lastOffData = data;
+        else if (data.location === "Katakhali") lastOffKatakhali = data;
+        else if (data.location === "Miapur") lastOffMiapur = data;
+        else if (data.location === "City Central") lastOffCityCentral = data;
+      } else if (data.action === "ON") {
+        if (data.location === "Katakhali") lastOnKatakhali = data;
+        else if (data.location === "Miapur") lastOnMiapur = data;
+        else if (data.location === "City Central") lastOnCityCentral = data;
+      }
 
-        // Return the log data formatted for Excel
-        return {
-          Date: dateFormatted,
-          Action: data.action,
-          Time: timeFormatted,
-          Location: data.location,
-          Interruption: interruptionTime
-        };
-      });
+      // Return the log data formatted for Excel
+      return {
+        Date: dateFormatted,
+        Action: data.action,
+        Time: timeFormatted,
+        Location: data.location,
+        Interruption: interruptionTime
+      };
+    });
 
-      // Generate the worksheet from the formatted data
-      const worksheet = XLSX.utils.json_to_sheet(logsForExcel);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
+    // Generate the worksheet from the formatted data
+    const worksheet = XLSX.utils.json_to_sheet(logsForExcel);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
 
-      // Write the Excel file
-      XLSX.writeFile(workbook, "combined_logs.xlsx");
+    // Write the Excel file
+    const fileName = "combined_logs.xlsx";
+    XLSX.writeFile(workbook, fileName);
 
-      alert('Logs downloaded successfully!');
-    } catch (error) {
-      console.error('Error downloading logs:', error);
-      alert('Error downloading logs. See console for details.');
-    } finally {
-      loadingText.style.display = 'none';
+    // Open Web Share API if available
+    if (navigator.canShare && navigator.canShare({ files: [new File([workbook], fileName)] })) {
+      try {
+        await navigator.share({
+          files: [new File([workbook], fileName)],
+          title: "Download Logs",
+          text: "Here's the log data file you requested."
+        });
+        alert('Logs shared successfully!');
+      } catch (err) {
+        console.error('Error sharing file:', err);
+        alert('Error sharing logs. Please try again.');
+      }
+    } else {
+      alert('Web Share API is not supported or file sharing is not available.');
     }
-  };
+
+  } catch (error) {
+    console.error('Error downloading logs:', error);
+    alert('Error downloading logs. See console for details.');
+  } finally {
+    loadingText.style.display = 'none';
+  }
+};
 
 
   // Initial loads
