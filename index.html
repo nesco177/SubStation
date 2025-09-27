@@ -141,7 +141,7 @@
 <!-- Katakhali / Miapur / City Central (ONE CARD, THREE PANELS) -->
 <div class="card">
   <!-- Katakhali -->
-  <button id="statusButtonKatakhali">Katakhal</button>
+  <button id="statusButtonKatakhali">Katakhali</button>
   <div id="timerKatakhali">00:00:00:00</div>
   <div id="buttonAreaKatakhali">
     <button id="onButtonKatakhali" class="on">ON</button>
@@ -860,7 +860,7 @@ downloadBtn.onclick = async () => {
     // Convert workbook to an array of bytes (buffer)
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
 
-    // Create a Blob from the array
+    // Create a Blob from the array and store it globally
     generatedExcelBlob = new Blob([excelBuffer], { type: 'application/octet-stream' });
 
     // Write the Excel file to disk
