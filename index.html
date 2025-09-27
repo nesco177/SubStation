@@ -988,7 +988,7 @@ document.getElementById('resetButton').addEventListener('click', async () => {
 // Define the password and the 8-hour time limit
 const correctPassword = "bm4";
 const passwordKey = "password_timestamp";
-const maxAge = 1000; // 8*60*60*1000 hours in milliseconds
+const maxAge =  1000; // 8 hours in milliseconds
 
 // Check if the password is valid (entered within the last 8 hours)
 function checkPassword() {
@@ -1006,17 +1006,18 @@ function checkPassword() {
 
 // Prompt for password and validate
 function promptForPassword() {
-  const passwordInput = prompt("Enter the password to access:");
+  let passwordInput = "";
+  while (passwordInput !== correctPassword) {
+    passwordInput = prompt("Enter the password to access:");
+    if (passwordInput === correctPassword) {
+      const currentTime = new Date().getTime();
+      localStorage.setItem(passwordKey, currentTime);
 
-  if (passwordInput === correctPassword) {
-    // If the password is correct, save the current timestamp
-    const currentTime = new Date().getTime();
-    localStorage.setItem(passwordKey, currentTime);
-
-    // Show the page content
-    document.getElementById('pageContent').style.display = 'block';
-  } else {
-    alert("Incorrect password. Access Denied.");
+      // Show the page content
+      document.getElementById('pageContent').style.display = 'block';
+    } else {
+      alert("Incorrect password. Please try again.");
+    }
   }
 }
 
