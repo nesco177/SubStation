@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ON/OFF Logger - Updated Firestore</title>
+  <title>ON/OFF Logger - Updated Firestore (Refactored)</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -83,48 +84,49 @@
     }
     .card:hover { transform: translateY(-5px); box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
     .card h2 { font-size: 26px; margin-bottom: 20px; color: #444; }
-    
-    
-    /* Minimal styling for the "Source" and "Feeder" info cards */
-.info-card {
-  --accent: #6c63ff;
-  display: flex;
-  justify-content: center;      /* Center contents */
-  align-items: center;
-  gap: 18px;
-  padding: 28px 32px;           /* Same spacing style */
-  border-radius: 20px;
-  border-left: 8px solid var(--accent);
-  background: linear-gradient(135deg, #ffffff, #f8f8fb);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-  width: 90%;                   /* 👈 same as .card */
-  max-width: 600px;             /* 👈 same as .card */
-  margin: 20px auto;            /* 👈 same vertical spacing as .card */
-  text-align: center;
-}
-.info-card .icon {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 35px;
-  color: var(--accent);
-  background: #f2f3ff;
-  box-shadow: inset 0 0 0 2px rgba(0,0,0,0.05);
-}
-.info-card h2 {
-  margin: 0;
-  font-size: 32px;              /* Same scale as your card headings */
-  font-weight: bold;
-  color: #333;
+
+    .info-card {
+      --accent: #6c63ff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 18px;
+      padding: 28px 32px;
+      border-radius: 20px;
+      border-left: 8px solid var(--accent);
+      background: linear-gradient(135deg, #ffffff, #f8f8fb);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+      width: 90%;
+      max-width: 600px;
+      margin: 20px auto;
+      text-align: center;
+    }
+    .info-card .icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 35px;
+      color: var(--accent);
+      background: #f2f3ff;
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,0.05);
+    }
+    .info-card h2 {
+      margin: 0;
+      font-size: 32px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .info-card.source { --accent: #8e2de2; }
+    .info-card.feeder { --accent: #2196f3; }
+
+button.on, button.off {
+  display: none;
 }
 
-/* Accent variants */
-.info-card.source { --accent: #8e2de2; }   /* purple */
-.info-card.feeder { --accent: #2196f3; }   /* blue  */
 
-    
   </style>
 </head>
 <body>
@@ -261,7 +263,6 @@
 
 
 
-
 <table id="logTable" border="1">
   <thead>
     <tr>
@@ -288,112 +289,49 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
+  // --- Stations configuration (keeps all IDs and behavior unchanged) ---
+  const stations = [
+    { name: 'Sultanabad', statDoc: 'f1_stat', logsCol: 'f1_logs', lastDoc: 'f1_last', ids: {statusBtn:'statusButton', timer:'timer', on:'onButton', off:'offButton', last:'lastInterruption'} },
+    { name: 'Town', statDoc: 'f2_stat', logsCol: 'f2_logs', lastDoc: 'f2_last', ids: {statusBtn:'statusButtonTown', timer:'timerTown', on:'onButtonTown', off:'offButtonTown', last:'lastInterruptionTown'} },
+    { name: 'Greater Road', statDoc: 'f3_stat', logsCol: 'f3_logs', lastDoc: 'f3_last', ids: {statusBtn:'statusButtonGreaterRoad', timer:'timerGreaterRoad', on:'onButtonGreaterRoad', off:'offButtonGreaterRoad', last:'lastInterruptionGreaterRoad'} },
+    { name: 'New Market', statDoc: 'f4_stat', logsCol: 'f4_logs', lastDoc: 'f4_last', ids: {statusBtn:'statusButtonNewMarket', timer:'timerNewMarket', on:'onButtonNewMarket', off:'offButtonNewMarket', last:'lastInterruptionNewMarket'} },
+    { name: 'Omar Plaza', statDoc: 'f5_stat', logsCol: 'f5_logs', lastDoc: 'f5_last', ids: {statusBtn:'statusButtonOmar', timer:'timerOmar', on:'onButtonOmar', off:'offButtonOmar', last:'lastInterruptionOmar'} },
+    { name: 'Nagar Bhaban', statDoc: 'f6_stat', logsCol: 'f6_logs', lastDoc: 'f6_last', ids: {statusBtn:'statusButtonNagar', timer:'timerNagar', on:'onButtonNagar', off:'offButtonNagar', last:'lastInterruptionNagar'} },
+    { name: 'Data Center', statDoc: 'f7_stat', logsCol: 'f7_logs', lastDoc: 'f7_last', ids: {statusBtn:'statusButtonData', timer:'timerData', on:'onButtonData', off:'offButtonData', last:'lastInterruptionData'} },
+    { name: 'Katakhali', statDoc: 'f8_stat', logsCol: 'f8_logs', lastDoc: 'f8_last', ids: {statusBtn:'statusButtonKatakhali', timer:'timerKatakhali', on:'onButtonKatakhali', off:'offButtonKatakhali', last:'lastInterruptionKatakhali'} },
+    { name: 'Miapur', statDoc: 'f9_stat', logsCol: 'f9_logs', lastDoc: 'f9_last', ids: {statusBtn:'statusButtonMiapur', timer:'timerMiapur', on:'onButtonMiapur', off:'offButtonMiapur', last:'lastInterruptionMiapur'} },
+    { name: 'City Central', statDoc: 'f10_stat', logsCol: 'f10_logs', lastDoc: 'f10_last', ids: {statusBtn:'statusButtonCityCentral', timer:'timerCityCentral', on:'onButtonCityCentral', off:'offButtonCityCentral', last:'lastInterruptionCityCentral'} }
+  ];
 
-  // References (existing)
-  const statusDoc = db.collection('Substation').doc('f1_stat');
-  const logsCol = db.collection('f1_logs');
-  const lastInterruptionDoc = db.collection('Substation').doc('f1_last');
-  const statusDocTown = db.collection('Substation').doc('f2_stat');
-  const logsColTown = db.collection('f2_logs');
-  const lastInterruptionDocTown = db.collection('Substation').doc('f2_last');
-  const statusDocGreaterRoad = db.collection('Substation').doc('f3_stat');
-  const logsColGreaterRoad = db.collection('f3_logs');
-  const lastInterruptionDocGreaterRoad = db.collection('Substation').doc('f3_last');
-  const statusDocNewMarket = db.collection('Substation').doc('f4_stat');
-  const logsColNewMarket = db.collection('f4_logs');
-  const lastInterruptionDocNewMarket = db.collection('Substation').doc('f4_last');
-  const statusDocOmar = db.collection('Substation').doc('f5_stat');
-  const logsColOmar = db.collection('f5_logs');
-  const lastInterruptionDocOmar = db.collection('Substation').doc('f5_last');
-  const statusDocNagar = db.collection('Substation').doc('f6_stat');
-  const logsColNagar = db.collection('f6_logs');
-  const lastInterruptionDocNagar = db.collection('Substation').doc('f6_last');
-  const statusDocData = db.collection('Substation').doc('f7_stat');
-  const logsColData = db.collection('f7_logs');
-  const lastInterruptionDocData = db.collection('Substation').doc('f7_last');
+  // Create maps for Firestore refs and DOM elements
+  const statusDocs = {};
+  const logsCols = {};
+  const lastDocs = {};
+  const elems = {};
+  const timerIntervals = {};
 
-  // NEW: References for Katakhali (f8), Miapur (f9), City Central (f10)
-  const statusDocKatakhali = db.collection('Substation').doc('f8_stat');
-  const logsColKatakhali = db.collection('f8_logs');
-  const lastInterruptionDocKatakhali = db.collection('Substation').doc('f8_last');
-  const statusDocMiapur = db.collection('Substation').doc('f9_stat');
-  const logsColMiapur = db.collection('f9_logs');
-  const lastInterruptionDocMiapur = db.collection('Substation').doc('f9_last');
-  const statusDocCityCentral = db.collection('Substation').doc('f10_stat');
-  const logsColCityCentral = db.collection('f10_logs');
-  const lastInterruptionDocCityCentral = db.collection('Substation').doc('f10_last');
+  stations.forEach(s => {
+    statusDocs[s.name] = db.collection('Substation').doc(s.statDoc);
+    logsCols[s.name] = db.collection(s.logsCol);
+    lastDocs[s.name] = db.collection('Substation').doc(s.lastDoc);
 
-  // Elements
-  const statusButton = document.getElementById('statusButton');
-  const statusButtonTown = document.getElementById('statusButtonTown');
-  const timerDiv = document.getElementById('timer');
-  const timerDivTown = document.getElementById('timerTown');
-  const onBtn = document.getElementById('onButton');
-  const offBtn = document.getElementById('offButton');
-  const onBtnTown = document.getElementById('onButtonTown');
-  const offBtnTown = document.getElementById('offButtonTown');
+    elems[s.name] = {
+      statusBtn: document.getElementById(s.ids.statusBtn),
+      timer: document.getElementById(s.ids.timer),
+      onBtn: document.getElementById(s.ids.on),
+      offBtn: document.getElementById(s.ids.off),
+      lastDiv: document.getElementById(s.ids.last)
+    };
+
+    timerIntervals[s.name] = { timer: null };
+  });
+
+  // Keep a reference to the table and controls used elsewhere
   const downloadBtn = document.getElementById('downloadButton');
   const loadingText = document.getElementById('loading');
   const logTable = document.getElementById('logTable').querySelector('tbody');
-  const lastInterruptionDiv = document.getElementById('lastInterruption');
-  const lastInterruptionDivTown = document.getElementById('lastInterruptionTown');
 
-  const statusButtonGreaterRoad = document.getElementById('statusButtonGreaterRoad');
-  const statusButtonNewMarket = document.getElementById('statusButtonNewMarket');
-  const timerDivGreaterRoad = document.getElementById('timerGreaterRoad');
-  const timerDivNewMarket = document.getElementById('timerNewMarket');
-  const onBtnGreaterRoad = document.getElementById('onButtonGreaterRoad');
-  const offBtnGreaterRoad = document.getElementById('offButtonGreaterRoad');
-  const onBtnNewMarket = document.getElementById('onButtonNewMarket');
-  const offBtnNewMarket = document.getElementById('offButtonNewMarket');
-  const lastInterruptionDivGreaterRoad = document.getElementById('lastInterruptionGreaterRoad');
-  const lastInterruptionDivNewMarket = document.getElementById('lastInterruptionNewMarket');
-
-  const statusButtonOmar = document.getElementById('statusButtonOmar');
-  const statusButtonNagar = document.getElementById('statusButtonNagar');
-  const statusButtonData = document.getElementById('statusButtonData');
-  const timerDivOmar = document.getElementById('timerOmar');
-  const timerDivNagar = document.getElementById('timerNagar');
-  const timerDivData = document.getElementById('timerData');
-  const onBtnOmar = document.getElementById('onButtonOmar');
-  const offBtnOmar = document.getElementById('offButtonOmar');
-  const onBtnNagar = document.getElementById('onButtonNagar');
-  const offBtnNagar = document.getElementById('offButtonNagar');
-  const onBtnData = document.getElementById('onButtonData');
-  const offBtnData = document.getElementById('offButtonData');
-  const lastInterruptionDivOmar = document.getElementById('lastInterruptionOmar');
-  const lastInterruptionDivNagar = document.getElementById('lastInterruptionNagar');
-  const lastInterruptionDivData = document.getElementById('lastInterruptionData');
-
-  // NEW: elements for the three special locations
-  const statusButtonKatakhali = document.getElementById('statusButtonKatakhali');
-  const statusButtonMiapur = document.getElementById('statusButtonMiapur');
-  const statusButtonCityCentral = document.getElementById('statusButtonCityCentral');
-  const timerDivKatakhali = document.getElementById('timerKatakhali');
-  const timerDivMiapur = document.getElementById('timerMiapur');
-  const timerDivCityCentral = document.getElementById('timerCityCentral');
-  const onBtnKatakhali = document.getElementById('onButtonKatakhali');
-  const offBtnKatakhali = document.getElementById('offButtonKatakhali');
-  const onBtnMiapur = document.getElementById('onButtonMiapur');
-  const offBtnMiapur = document.getElementById('offButtonMiapur');
-  const onBtnCityCentral = document.getElementById('onButtonCityCentral');
-  const offBtnCityCentral = document.getElementById('offButtonCityCentral');
-  const lastInterruptionDivKatakhali = document.getElementById('lastInterruptionKatakhali');
-  const lastInterruptionDivMiapur = document.getElementById('lastInterruptionMiapur');
-  const lastInterruptionDivCityCentral = document.getElementById('lastInterruptionCityCentral');
-
-  // timer holders
-  let timerInterval = { timer: null };
-  let timerIntervalTown = { timer: null };
-  let timerIntervalGreaterRoad = { timer: null };
-  let timerIntervalNewMarket = { timer: null };
-  let timerIntervalOmar = { timer: null };
-  let timerIntervalNagar = { timer: null };
-  let timerIntervalData = { timer: null };
-  let timerIntervalKatakhali = { timer: null };
-  let timerIntervalMiapur = { timer: null };
-  let timerIntervalCityCentral = { timer: null };
-
+  // Preserve function names and behavior exactly
   function animateButton(button, state) {
     button.style.transition = "transform 0.4s cubic-bezier(0.68,-0.55,0.265,1.55), box-shadow 0.4s ease";
     button.style.transform = "scale(1.15)";
@@ -441,24 +379,12 @@
     element.textContent = resetText;
   }
 
-  // helper: get last-interruption div by location
   function getLastDivByLocation(location) {
-    return location === "Sultanabad" ? lastInterruptionDiv :
-           location === "Town" ? lastInterruptionDivTown :
-           location === "Greater Road" ? lastInterruptionDivGreaterRoad :
-           location === "New Market" ? lastInterruptionDivNewMarket :
-           location === "Omar Plaza" ? lastInterruptionDivOmar :
-           location === "Nagar Bhaban" ? lastInterruptionDivNagar :
-           location === "Data Center" ? lastInterruptionDivData :
-           location === "Katakhali" ? lastInterruptionDivKatakhali :
-           location === "Miapur" ? lastInterruptionDivMiapur :
-           lastInterruptionDivCityCentral;
+    return elems[location] ? elems[location].lastDiv : null;
   }
   function renderLastDiv(mainText, subText, lastDiv) {
-    lastDiv.innerHTML = `
-      <div>${mainText}</div>
-      <div style="font-size:20px;color:#e57373;margin-top:10px;">${subText}</div>
-    `;
+    if (!lastDiv) return;
+    lastDiv.innerHTML = `\n      <div>${mainText}</div>\n      <div style="font-size:20px;color:#e57373;margin-top:10px;">${subText}</div>\n    `;
     lastDiv.style.opacity = '0';
     setTimeout(() => { lastDiv.style.opacity = '1'; }, 100);
   }
@@ -511,17 +437,7 @@
   function updateUI(button, timerEl, state, time, onBtnEl, offBtnEl, location) {
     animateButton(button, state);
     const isSpecial = (location === "Katakhali" || location === "Miapur" || location === "City Central");
-    const holder =
-      location === "Sultanabad" ? timerInterval :
-      location === "Town" ? timerIntervalTown :
-      location === "Greater Road" ? timerIntervalGreaterRoad :
-      location === "New Market" ? timerIntervalNewMarket :
-      location === "Omar Plaza" ? timerIntervalOmar :
-      location === "Nagar Bhaban" ? timerIntervalNagar :
-      location === "Data Center" ? timerIntervalData :
-      location === "Katakhali" ? timerIntervalKatakhali :
-      location === "Miapur" ? timerIntervalMiapur :
-      timerIntervalCityCentral;
+    const holder = timerIntervals[location];
 
     if (state === "ON") {
       button.style.backgroundColor = "green";
@@ -545,56 +461,29 @@
   }
 
   async function fetchLogs() {
-    const [s1,s2,s3,s4,s5,s6,s7,s8,s9,s10] = await Promise.all([
-      logsCol.orderBy('timestamp').get(),
-      logsColTown.orderBy('timestamp').get(),
-      logsColGreaterRoad.orderBy('timestamp').get(),
-      logsColNewMarket.orderBy('timestamp').get(),
-      logsColOmar.orderBy('timestamp').get(),
-      logsColNagar.orderBy('timestamp').get(),
-      logsColData.orderBy('timestamp').get(),
-      logsColKatakhali.orderBy('timestamp').get(),
-      logsColMiapur.orderBy('timestamp').get(),
-      logsColCityCentral.orderBy('timestamp').get()
-    ]);
+    // fetch all collections in parallel
+    const snapshots = await Promise.all(Object.values(logsCols).map(col => col.orderBy('timestamp').get()));
 
-    const allLogs = [
-      ...s1.docs.map(d=>({...d.data(), location:"Sultanabad"})),
-      ...s2.docs.map(d=>({...d.data(), location:"Town"})),
-      ...s3.docs.map(d=>({...d.data(), location:"Greater Road"})),
-      ...s4.docs.map(d=>({...d.data(), location:"New Market"})),
-      ...s5.docs.map(d=>({...d.data(), location:"Omar Plaza"})),
-      ...s6.docs.map(d=>({...d.data(), location:"Nagar Bhaban"})),
-      ...s7.docs.map(d=>({...d.data(), location:"Data Center"})),
-      ...s8.docs.map(d=>({...d.data(), location:"Katakhali"})),
-      ...s9.docs.map(d=>({...d.data(), location:"Miapur"})),
-      ...s10.docs.map(d=>({...d.data(), location:"City Central"}))
-    ];
+    // map back to named logs
+    const allLogs = [];
+    snapshots.forEach((snap, idx) => {
+      const location = stations[idx].name;
+      snap.docs.forEach(d => allLogs.push({ ...d.data(), location }));
+    });
+
     allLogs.sort((a,b)=> new Date(a.timestamp)-new Date(b.timestamp));
 
     logTable.innerHTML = '';
 
-    let lastOffSultanabad=null, lastOffTown=null, lastOffGreaterRoad=null, lastOffNewMarket=null;
-    let lastOffOmar=null, lastOffNagar=null, lastOffData=null;
-    let lastOffKatakhali=null, lastOffMiapur=null, lastOffCityCentral=null;
-    let lastOnKatakhali=null, lastOnMiapur=null, lastOnCityCentral=null;
+    let lastOff = {};
+    let lastOnSpecial = {};
 
     allLogs.forEach(data=>{
       let interruptionTime='--';
 
       if (data.action === "ON") {
         const isSpecial = (data.location==="Katakhali"||data.location==="Miapur"||data.location==="City Central");
-        const lastOffAction =
-          data.location==="Sultanabad"?lastOffSultanabad:
-          data.location==="Town"?lastOffTown:
-          data.location==="Greater Road"?lastOffGreaterRoad:
-          data.location==="New Market"?lastOffNewMarket:
-          data.location==="Omar Plaza"?lastOffOmar:
-          data.location==="Nagar Bhaban"?lastOffNagar:
-          data.location==="Data Center"?lastOffData:
-          data.location==="Katakhali"?lastOffKatakhali:
-          data.location==="Miapur"?lastOffMiapur:
-          lastOffCityCentral;
+        const lastOffAction = lastOff[data.location];
 
         if (!isSpecial && lastOffAction) {
           const offTime = new Date(lastOffAction.timestamp);
@@ -607,15 +496,14 @@
             interruptionTime = `${h}:${m}:${s}`;
           }
         }
-        if (data.location==="Katakhali") lastOnKatakhali=data;
-        else if (data.location==="Miapur") lastOnMiapur=data;
-        else if (data.location==="City Central") lastOnCityCentral=data;
+        if (data.location==="Katakhali") lastOnSpecial.Katakhali=data;
+        else if (data.location==="Miapur") lastOnSpecial.Miapur=data;
+        else if (data.location==="City Central") lastOnSpecial.CityCentral=data;
       }
 
       if (data.action==="OFF" && (data.location==="Katakhali"||data.location==="Miapur"||data.location==="City Central")) {
-        const lastOnAction = data.location==="Katakhali"?lastOnKatakhali:
-                             data.location==="Miapur"?lastOnMiapur:
-                             lastOnCityCentral;
+        const lastOnAction = data.location==="Katakhali"?lastOnSpecial.Katakhali:
+                             data.location==="Miapur"?lastOnSpecial.Miapur:lastOnSpecial.CityCentral;
         if (lastOnAction) {
           const diffMs = new Date(data.timestamp) - new Date(lastOnAction.timestamp);
           if (diffMs>=0) interruptionTime = formatDHMS(diffMs);
@@ -623,16 +511,7 @@
       }
 
       if (data.action==="OFF") {
-        if (data.location==="Sultanabad") lastOffSultanabad=data;
-        else if (data.location==="Town") lastOffTown=data;
-        else if (data.location==="Greater Road") lastOffGreaterRoad=data;
-        else if (data.location==="New Market") lastOffNewMarket=data;
-        else if (data.location==="Omar Plaza") lastOffOmar=data;
-        else if (data.location==="Nagar Bhaban") lastOffNagar=data;
-        else if (data.location==="Data Center") lastOffData=data;
-        else if (data.location==="Katakhali") lastOffKatakhali=data;
-        else if (data.location==="Miapur") lastOffMiapur=data;
-        else if (data.location==="City Central") lastOffCityCentral=data;
+        lastOff[data.location] = data;
       }
 
       const logDate = new Date(data.timestamp);
@@ -683,9 +562,7 @@
         updateUI(button, timerEl, "OFF", data.f_off, onBtnEl, offBtnEl, location);
         // SPECIAL: when OFF, keep reset (do not freeze)
         if (location==="Katakhali"||location==="Miapur"||location==="City Central") {
-          const holder = location==="Katakhali"?timerIntervalKatakhali:
-                         location==="Miapur"?timerIntervalMiapur:
-                         timerIntervalCityCentral;
+          const holder = timerIntervals[location];
           stopTimer(timerEl, holder, "00:00:00:00");
         }
       }
@@ -704,277 +581,166 @@
     }
   }
 
+  // Bind buttons dynamically while preserving original behavior
+  stations.forEach((s) => {
+    const statusDocRef = statusDocs[s.name];
+    const logsColRef = logsCols[s.name];
+    const lastDocRef = lastDocs[s.name];
+    const el = elems[s.name];
 
+    el.onBtn.onclick = () => handleButtonClick(statusDocRef, logsColRef, s.name, el.statusBtn, el.timer, el.onBtn, el.offBtn, lastDocRef, true);
+    el.offBtn.onclick = () => handleButtonClick(statusDocRef, logsColRef, s.name, el.statusBtn, el.timer, el.onBtn, el.offBtn, lastDocRef, false);
+  });
 
+  let generatedExcelBlob = null;  // Global variable to store the Blob
 
+  // Download Button Logic (keeps logic identical but uses maps)
+  downloadBtn.onclick = async () => {
+    loadingText.style.display = 'block';
 
-  // Button bindings
-  onBtn.onclick = () => handleButtonClick(statusDoc, logsCol, "Sultanabad", statusButton, timerDiv, onBtn, offBtn, lastInterruptionDoc, true);
-  offBtn.onclick = () => handleButtonClick(statusDoc, logsCol, "Sultanabad", statusButton, timerDiv, onBtn, offBtn, lastInterruptionDoc, false);
-  onBtnTown.onclick = () => handleButtonClick(statusDocTown, logsColTown, "Town", statusButtonTown, timerDivTown, onBtnTown, offBtnTown, lastInterruptionDocTown, true);
-  offBtnTown.onclick = () => handleButtonClick(statusDocTown, logsColTown, "Town", statusButtonTown, timerDivTown, onBtnTown, offBtnTown, lastInterruptionDocTown, false);
+    let lastOff = {};
+    let lastOnSpecial = {};
 
-  onBtnGreaterRoad.onclick = () => handleButtonClick(statusDocGreaterRoad, logsColGreaterRoad, "Greater Road", statusButtonGreaterRoad, timerDivGreaterRoad, onBtnGreaterRoad, offBtnGreaterRoad, lastInterruptionDocGreaterRoad, true);
-  offBtnGreaterRoad.onclick = () => handleButtonClick(statusDocGreaterRoad, logsColGreaterRoad, "Greater Road", statusButtonGreaterRoad, timerDivGreaterRoad, onBtnGreaterRoad, offBtnGreaterRoad, lastInterruptionDocGreaterRoad, false);
-  onBtnNewMarket.onclick = () => handleButtonClick(statusDocNewMarket, logsColNewMarket, "New Market", statusButtonNewMarket, timerDivNewMarket, onBtnNewMarket, offBtnNewMarket, lastInterruptionDocNewMarket, true);
-  offBtnNewMarket.onclick = () => handleButtonClick(statusDocNewMarket, logsColNewMarket, "New Market", statusButtonNewMarket, timerDivNewMarket, onBtnNewMarket, offBtnNewMarket, lastInterruptionDocNewMarket, false);
-
-  onBtnOmar.onclick = () => handleButtonClick(statusDocOmar, logsColOmar, "Omar Plaza", statusButtonOmar, timerDivOmar, onBtnOmar, offBtnOmar, lastInterruptionDocOmar, true);
-  offBtnOmar.onclick = () => handleButtonClick(statusDocOmar, logsColOmar, "Omar Plaza", statusButtonOmar, timerDivOmar, onBtnOmar, offBtnOmar, lastInterruptionDocOmar, false);
-  onBtnNagar.onclick = () => handleButtonClick(statusDocNagar, logsColNagar, "Nagar Bhaban", statusButtonNagar, timerDivNagar, onBtnNagar, offBtnNagar, lastInterruptionDocNagar, true);
-  offBtnNagar.onclick = () => handleButtonClick(statusDocNagar, logsColNagar, "Nagar Bhaban", statusButtonNagar, timerDivNagar, onBtnNagar, offBtnNagar, lastInterruptionDocNagar, false);
-  onBtnData.onclick = () => handleButtonClick(statusDocData, logsColData, "Data Center", statusButtonData, timerDivData, onBtnData, offBtnData, lastInterruptionDocData, true);
-  offBtnData.onclick = () => handleButtonClick(statusDocData, logsColData, "Data Center", statusButtonData, timerDivData, onBtnData, offBtnData, lastInterruptionDocData, false);
-
-  onBtnKatakhali.onclick = () => handleButtonClick(statusDocKatakhali, logsColKatakhali, "Katakhali", statusButtonKatakhali, timerDivKatakhali, onBtnKatakhali, offBtnKatakhali, lastInterruptionDocKatakhali, true);
-  offBtnKatakhali.onclick = () => handleButtonClick(statusDocKatakhali, logsColKatakhali, "Katakhali", statusButtonKatakhali, timerDivKatakhali, onBtnKatakhali, offBtnKatakhali, lastInterruptionDocKatakhali, false);
-  onBtnMiapur.onclick = () => handleButtonClick(statusDocMiapur, logsColMiapur, "Miapur", statusButtonMiapur, timerDivMiapur, onBtnMiapur, offBtnMiapur, lastInterruptionDocMiapur, true);
-  offBtnMiapur.onclick = () => handleButtonClick(statusDocMiapur, logsColMiapur, "Miapur", statusButtonMiapur, timerDivMiapur, onBtnMiapur, offBtnMiapur, lastInterruptionDocMiapur, false);
-  onBtnCityCentral.onclick = () => handleButtonClick(statusDocCityCentral, logsColCityCentral, "City Central", statusButtonCityCentral, timerDivCityCentral, onBtnCityCentral, offBtnCityCentral, lastInterruptionDocCityCentral, true);
-  offBtnCityCentral.onclick = () => handleButtonClick(statusDocCityCentral, logsColCityCentral, "City Central", statusButtonCityCentral, timerDivCityCentral, onBtnCityCentral, offBtnCityCentral, lastInterruptionDocCityCentral, false);
-
-let generatedExcelBlob = null;  // Global variable to store the Blob
-
-// Download Button Logic
-downloadBtn.onclick = async () => {
-  loadingText.style.display = 'block';
-
-  // Initialize last OFF actions for all locations
-  let lastOffSultanabad = null;
-  let lastOffTown = null;
-  let lastOffGreaterRoad = null;
-  let lastOffNewMarket = null;
-  let lastOffOmar = null;
-  let lastOffNagar = null;
-  let lastOffData = null;
-  let lastOffKatakhali = null;
-  let lastOffMiapur = null;
-  let lastOffCityCentral = null;
-
-  let lastOnKatakhali = null;
-  let lastOnMiapur = null;
-  let lastOnCityCentral = null;
-
-  try {
-    const [snapshot1, snapshot2, snapshot3, snapshot4, snapshot5, snapshot6, snapshot7, snapshot8, snapshot9, snapshot10] = await Promise.all([
-      logsCol.orderBy('timestamp').get(), logsColTown.orderBy('timestamp').get(), logsColGreaterRoad.orderBy('timestamp').get(),
-      logsColNewMarket.orderBy('timestamp').get(), logsColOmar.orderBy('timestamp').get(), logsColNagar.orderBy('timestamp').get(),
-      logsColData.orderBy('timestamp').get(), logsColKatakhali.orderBy('timestamp').get(), logsColMiapur.orderBy('timestamp').get(),
-      logsColCityCentral.orderBy('timestamp').get()
-    ]);
-
-    const allLogs = [
-      ...snapshot1.docs.map(doc => ({ ...doc.data(), location: "Sultanabad" })),
-      ...snapshot2.docs.map(doc => ({ ...doc.data(), location: "Town" })),
-      ...snapshot3.docs.map(doc => ({ ...doc.data(), location: "Greater Road" })),
-      ...snapshot4.docs.map(doc => ({ ...doc.data(), location: "New Market" })),
-      ...snapshot5.docs.map(doc => ({ ...doc.data(), location: "Omar Plaza" })),
-      ...snapshot6.docs.map(doc => ({ ...doc.data(), location: "Nagar Bhaban" })),
-      ...snapshot7.docs.map(doc => ({ ...doc.data(), location: "Data Center" })),
-      ...snapshot8.docs.map(doc => ({ ...doc.data(), location: "Katakhali" })),
-      ...snapshot9.docs.map(doc => ({ ...doc.data(), location: "Miapur" })),
-      ...snapshot10.docs.map(doc => ({ ...doc.data(), location: "City Central" }))
-    ];
-
-    allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-    const logsForExcel = allLogs.map(data => {
-      const logDate = new Date(data.timestamp);
-      const dateFormatted = logDate.toLocaleDateString('en-GB');
-      const timeFormatted = logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-
-      let interruptionTime = '--';
-
-      if (data.action === "ON") {
-        let lastOffAction;
-        if (data.location === "Sultanabad") lastOffAction = lastOffSultanabad;
-        else if (data.location === "Town") lastOffAction = lastOffTown;
-        else if (data.location === "Greater Road") lastOffAction = lastOffGreaterRoad;
-        else if (data.location === "New Market") lastOffAction = lastOffNewMarket;
-        else if (data.location === "Omar Plaza") lastOffAction = lastOffOmar;
-        else if (data.location === "Nagar Bhaban") lastOffAction = lastOffNagar;
-        else if (data.location === "Data Center") lastOffAction = lastOffData;
-        else if (data.location === "Katakhali") lastOffAction = lastOffKatakhali;
-        else if (data.location === "Miapur") lastOffAction = lastOffMiapur;
-        else if (data.location === "City Central") lastOffAction = lastOffCityCentral;
-
-        if (lastOffAction) {
-          const offTime = new Date(lastOffAction.timestamp);
-          const onTime = new Date(data.timestamp);
-          const diffMs = onTime - offTime;
-          if (diffMs >= 0) {
-            const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
-            const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
-            const s = String(Math.floor((diffMs % 60000) / 1000)).padStart(2, '0');
-            interruptionTime = `${h}:${m}:${s}`;
-          }
-        }
-      }
-
-      if (data.action === "OFF" && (data.location === "Katakhali" || data.location === "Miapur" || data.location === "City Central")) {
-        const lastOnAction = data.location === "Katakhali" ? lastOnKatakhali : data.location === "Miapur" ? lastOnMiapur : lastOnCityCentral;
-        if (lastOnAction) {
-          const onTime = new Date(lastOnAction.timestamp);
-          const offTime = new Date(data.timestamp);
-          const diffMs = offTime - onTime;
-          if (diffMs >= 0) {
-            interruptionTime = formatDHMS(diffMs);
-          }
-        }
-      }
-
-      if (data.action === "OFF") {
-        if (data.location === "Sultanabad") lastOffSultanabad = data;
-        else if (data.location === "Town") lastOffTown = data;
-        else if (data.location === "Greater Road") lastOffGreaterRoad = data;
-        else if (data.location === "New Market") lastOffNewMarket = data;
-        else if (data.location === "Omar Plaza") lastOffOmar = data;
-        else if (data.location === "Nagar Bhaban") lastOffNagar = data;
-        else if (data.location === "Data Center") lastOffData = data;
-        else if (data.location === "Katakhali") lastOffKatakhali = data;
-        else if (data.location === "Miapur") lastOffMiapur = data;
-        else if (data.location === "City Central") lastOffCityCentral = data;
-      } else if (data.action === "ON") {
-        if (data.location === "Katakhali") lastOnKatakhali = data;
-        else if (data.location === "Miapur") lastOnMiapur = data;
-        else if (data.location === "City Central") lastOnCityCentral = data;
-      }
-
-      return {
-        Date: dateFormatted,
-        Action: data.action,
-        Time: timeFormatted,
-        Location: data.location,
-        Interruption: interruptionTime
-      };
-    });
-
-    // Generate the worksheet from the formatted data
-    const worksheet = XLSX.utils.json_to_sheet(logsForExcel);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
-
-    // Convert workbook to an array of bytes (buffer)
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-
-    // Create a Blob from the array and store it globally
-    generatedExcelBlob = new Blob([excelBuffer], { type: 'application/octet-stream' });
-
-    // Get the current date and time in DD.MM.YYYY_HH.MMam/pm format for the filename
-    const currentDate = new Date();
-    const day = String(currentDate.getDate()).padStart(2, '0');
-    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-    const year = currentDate.getFullYear();
-    let hours = currentDate.getHours();
-    const minutes = String(currentDate.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'pm' : 'am';
-    hours = hours % 12;
-    hours = hours ? String(hours).padStart(2, '0') : '12';  // 12-hour format
-
-    // Construct the filename
-    const formattedDateTime = `${day}.${month}.${year}_${hours}.${minutes}${ampm}.xlsx`;
-
-    // Write the Excel file to disk with the formatted date and time as the filename
-    XLSX.writeFile(workbook, formattedDateTime);
-
-  } catch (error) {
-    console.error('Error downloading logs:', error);
-    alert('Error downloading logs. See console for details.');
-  } finally {
-    loadingText.style.display = 'none';
-  }
-};
-
-
-  // Initial loads
-  fetchLogs();
-  fetchCurrentStatus(statusDoc, statusButton, timerDiv, onBtn, offBtn, "Sultanabad");
-  fetchCurrentStatus(statusDocTown, statusButtonTown, timerDivTown, onBtnTown, offBtnTown, "Town");
-  fetchCurrentStatus(statusDocGreaterRoad, statusButtonGreaterRoad, timerDivGreaterRoad, onBtnGreaterRoad, offBtnGreaterRoad, "Greater Road");
-  fetchCurrentStatus(statusDocNewMarket, statusButtonNewMarket, timerDivNewMarket, onBtnNewMarket, offBtnNewMarket, "New Market");
-  fetchCurrentStatus(statusDocOmar, statusButtonOmar, timerDivOmar, onBtnOmar, offBtnOmar, "Omar Plaza");
-  fetchCurrentStatus(statusDocNagar, statusButtonNagar, timerDivNagar, onBtnNagar, offBtnNagar, "Nagar Bhaban");
-  fetchCurrentStatus(statusDocData, statusButtonData, timerDivData, onBtnData, offBtnData, "Data Center");
-  fetchCurrentStatus(statusDocKatakhali, statusButtonKatakhali, timerDivKatakhali, onBtnKatakhali, offBtnKatakhali, "Katakhali");
-  fetchCurrentStatus(statusDocMiapur, statusButtonMiapur, timerDivMiapur, onBtnMiapur, offBtnMiapur, "Miapur");
-  fetchCurrentStatus(statusDocCityCentral, statusButtonCityCentral, timerDivCityCentral, onBtnCityCentral, offBtnCityCentral, "City Central");
-
-  fetchLastInterruption(lastInterruptionDoc, lastInterruptionDiv);
-  fetchLastInterruption(lastInterruptionDocTown, lastInterruptionDivTown);
-  fetchLastInterruption(lastInterruptionDocGreaterRoad, lastInterruptionDivGreaterRoad);
-  fetchLastInterruption(lastInterruptionDocNewMarket, lastInterruptionDivNewMarket);
-  fetchLastInterruption(lastInterruptionDocOmar, lastInterruptionDivOmar);
-  fetchLastInterruption(lastInterruptionDocNagar, lastInterruptionDivNagar);
-  fetchLastInterruption(lastInterruptionDocData, lastInterruptionDivData);
-  fetchLastInterruption(lastInterruptionDocKatakhali, lastInterruptionDivKatakhali);
-  fetchLastInterruption(lastInterruptionDocMiapur, lastInterruptionDivMiapur);
-  fetchLastInterruption(lastInterruptionDocCityCentral, lastInterruptionDivCityCentral);
-  
-// New: Reset Button Listener
-document.getElementById('resetButton').addEventListener('click', async () => {
-  // Prompt the user for the password
-  const password = prompt("Enter the password:");
-
-  // Check if the password is correct
-  if (password === "rst") {
     try {
-      // List all collections that you want to reset (add more collections as needed)
-      const collections = [
-        'f1_logs',
-        'f2_logs',
-        'f3_logs',
-        'f4_logs',
-        'f5_logs',
-        'f6_logs',
-        'f7_logs',
-        'f8_logs',
-        'f9_logs',
-        'f10_logs'
-      ];
+      // fetch all snapshots in same order as stations array
+      const snapshots = await Promise.all(stations.map(s => logsCols[s.name].orderBy('timestamp').get()));
 
-      // Loop through each collection and delete the logs
-      const deletePromises = collections.map(async (collection) => {
-        const logsSnapshot = await db.collection(collection).get();
-
-        if (logsSnapshot.empty) {
-          console.log(`${collection} has no logs to delete.`);
-          return;
-        }
-
-        const batch = db.batch();
-        logsSnapshot.docs.forEach((doc) => {
-          batch.delete(doc.ref);  // Add delete operation to the batch
-        });
-
-        // Commit the batch deletion
-        await batch.commit();
-        console.log(`${collection} logs deleted.`);
+      const allLogs = [];
+      snapshots.forEach((snap, idx) => {
+        const location = stations[idx].name;
+        snap.docs.forEach(doc => allLogs.push({ ...doc.data(), location }));
       });
 
-      // Wait for all deletions to complete
-      await Promise.all(deletePromises);
+      allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-      // Clear the table in the DOM
-      const logTableBody = document.querySelector('#logTable tbody');
-      logTableBody.innerHTML = ''; // Clear the table body
+      const logsForExcel = allLogs.map(data => {
+        const logDate = new Date(data.timestamp);
+        const dateFormatted = logDate.toLocaleDateString('en-GB');
+        const timeFormatted = logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
-      alert('All logs from all collections have been deleted.');
+        let interruptionTime = '--';
 
-      // Refresh the page to reflect changes
-      location.reload();
+        if (data.action === "ON") {
+          const lastOffAction = lastOff[data.location];
+          if (lastOffAction) {
+            const offTime = new Date(lastOffAction.timestamp);
+            const onTime = new Date(data.timestamp);
+            const diffMs = onTime - offTime;
+            if (diffMs >= 0) {
+              const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
+              const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
+              const s = String(Math.floor((diffMs % 60000) / 1000)).padStart(2, '0');
+              interruptionTime = `${h}:${m}:${s}`;
+            }
+          }
+        }
+
+        if (data.action === "OFF" && (data.location === "Katakhali" || data.location === "Miapur" || data.location === "City Central")) {
+          const lastOnAction = data.location === "Katakhali" ? lastOnSpecial.Katakhali : data.location === "Miapur" ? lastOnSpecial.Miapur : lastOnSpecial.CityCentral;
+          if (lastOnAction) {
+            const onTime = new Date(lastOnAction.timestamp);
+            const offTime = new Date(data.timestamp);
+            const diffMs = offTime - onTime;
+            if (diffMs >= 0) {
+              interruptionTime = formatDHMS(diffMs);
+            }
+          }
+        }
+
+        if (data.action === "OFF") {
+          lastOff[data.location] = data;
+        } else if (data.action === "ON") {
+          if (data.location === "Katakhali") lastOnSpecial.Katakhali = data;
+          else if (data.location === "Miapur") lastOnSpecial.Miapur = data;
+          else if (data.location === "City Central") lastOnSpecial.CityCentral = data;
+        }
+
+        return {
+          Date: dateFormatted,
+          Action: data.action,
+          Time: timeFormatted,
+          Location: data.location,
+          Interruption: interruptionTime
+        };
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(logsForExcel);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
+
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      generatedExcelBlob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+
+      const currentDate = new Date();
+      const day = String(currentDate.getDate()).padStart(2, '0');
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const year = currentDate.getFullYear();
+      let hours = currentDate.getHours();
+      const minutes = String(currentDate.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'pm' : 'am';
+      hours = hours % 12;
+      hours = hours ? String(hours).padStart(2, '0') : '12';
+      const formattedDateTime = `${day}.${month}.${year}_${hours}.${minutes}${ampm}.xlsx`;
+
+      XLSX.writeFile(workbook, formattedDateTime);
+
     } catch (error) {
-      console.error('Error resetting logs:', error);
-      alert('An error occurred while resetting logs.');
+      console.error('Error downloading logs:', error);
+      alert('Error downloading logs. See console for details.');
+    } finally {
+      loadingText.style.display = 'none';
     }
-  } else {
-    // If the password is incorrect, show an alert
-    alert("Incorrect password. Logs will not be reset.");
-  }
-});
+  };
 
+  // Initial loads (preserve same sequence)
+  fetchLogs();
+  stations.forEach(s => fetchCurrentStatus(statusDocs[s.name], elems[s.name].statusBtn, elems[s.name].timer, elems[s.name].onBtn, elems[s.name].offBtn, s.name));
+  stations.forEach(s => fetchLastInterruption(lastDocs[s.name], elems[s.name].lastDiv));
 
-  
+  // New: Reset Button Listener (keeps password and behavior identical)
+  document.getElementById('resetButton').addEventListener('click', async () => {
+    const password = prompt("Enter the password:");
+
+    if (password === "rst") {
+      try {
+        const collections = stations.map(s => s.logsCol);
+
+        const deletePromises = collections.map(async (collection) => {
+          const logsSnapshot = await db.collection(collection).get();
+
+          if (logsSnapshot.empty) {
+            console.log(`${collection} has no logs to delete.`);
+            return;
+          }
+
+          const batch = db.batch();
+          logsSnapshot.docs.forEach((doc) => {
+            batch.delete(doc.ref);
+          });
+
+          await batch.commit();
+          console.log(`${collection} logs deleted.`);
+        });
+
+        await Promise.all(deletePromises);
+
+        const logTableBody = document.querySelector('#logTable tbody');
+        logTableBody.innerHTML = '';
+
+        alert('All logs from all collections have been deleted.');
+
+        location.reload();
+      } catch (error) {
+        console.error('Error resetting logs:', error);
+        alert('An error occurred while resetting logs.');
+      }
+    } else {
+      alert("Incorrect password. Logs will not be reset.");
+    }
+  });
+
 </script>
-  
+
+
 </body>
 </html>
