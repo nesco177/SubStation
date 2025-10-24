@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,15 +7,16 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-     body {
-      font-family: 'Arial', sans-serif;
-      text-align: center;
-      margin-top: 50px;
-      background: linear-gradient(145deg, #f0f0f0, #dcdcdc);
-      padding: 0;
-      margin: 0;
-      color: #333;
-    }
+     /* === Restore body background design from the first version === */
+body {
+  background: linear-gradient(145deg, #f0f0f0, #dcdcdc);
+  font-family: 'Arial', sans-serif;
+  text-align: center;
+  margin-top: 50px;
+  padding: 0;
+  margin: 0;
+  color: #333;
+}
     button {
       font-size: 18px;
       padding: 14px 36px;
@@ -45,19 +45,25 @@
     .download { background: linear-gradient(145deg, #2196f3, #1976d2); color: white; }
     #loading { display: none; font-size: 18px; color: green; }
 
-    #timer, #timerTown, #timerGreaterRoad , #timerNewMarket,
-    #timerOmar, #timerNagar, #timerData,
-    #timerKatakhali, #timerMiapur, #timerCityCentral {
+
+   #timerCollege, #timerShadharonBima, #timerRDA, #timerShahebBazar, #timerKumarpara, #timerBiddutVobon, 
+   #timerKolabagan, #timerMedical, #timerPoromanu, #timerBTV, #timerCircuitHouse, #timerNovoTheater, #timerKatakhali, 
+   #timerMiapur, #timerBindurMor, #timerTalaimari
+   {
       font-size: 36px; margin: 20px; font-weight: bold; color: #333;
     }
 
-    #buttonArea, #buttonAreaTown, #buttonAreaGreaterRoad, #buttonAreaNewMarket,
-    #buttonAreaOmar, #buttonAreaNagar, #buttonAreaData,
-    #buttonAreaKatakhali, #buttonAreaMiapur, #buttonAreaCityCentral { margin-bottom: 30px; }
+    #buttonAreaCollege, #buttonAreaShadharonBima, #buttonAreaRDA, #buttonAreaShahebBazar, #buttonAreaKumarpara, 
+    #buttonAreaBiddutVobon, #buttonAreaKolabagan, #buttonAreaMedical, #buttonAreaPoromanu, #buttonAreaBTV, 
+    #buttonAreaCircuitHouse, #buttonAreaNovoTheater, #buttonAreaKatakhali, #buttonAreaMiapur, #buttonAreaBindurMor, #buttonAreaTalaimari
+ { margin-bottom: 30px; }
 
-    #lastInterruption, #lastInterruptionTown, #lastInterruptionGreaterRoad, #lastInterruptionNewMarket,
-    #lastInterruptionOmar, #lastInterruptionNagar, #lastInterruptionData,
-    #lastInterruptionKatakhali, #lastInterruptionMiapur, #lastInterruptionCityCentral {
+   #lastInterruptionCollege, #lastInterruptionShadharonBima, #lastInterruptionRDA, 
+   #lastInterruptionShahebBazar, #lastInterruptionKumarpara, #lastInterruptionBiddutVobon, 
+   #lastInterruptionKolabagan, #lastInterruptionMedical, #lastInterruptionPoromanu, #lastInterruptionBTV, 
+   #lastInterruptionCircuitHouse, #lastInterruptionNovoTheater, #lastInterruptionKatakhali, #lastInterruptionMiapur, 
+   #lastInterruptionBindurMor, #lastInterruptionTalaimari
+ {
       margin-top: 20px; font-size: 22px; background: white; display: inline-block;
       padding: 15px 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       color: #555; font-weight: bold; transition: opacity 0.5s ease, transform 0.3s ease;
@@ -71,9 +77,11 @@
     th { background-color: #f1f1f1; color: #555; }
     tr:hover { background-color: #f9f9f9; transform: scale(1.02); }
 
-    #statusButton, #statusButtonTown, #statusButtonGreaterRoad, #statusButtonNewMarket,
-    #statusButtonOmar, #statusButtonNagar, #statusButtonData,
-    #statusButtonKatakhali, #statusButtonMiapur, #statusButtonCityCentral {
+   #statusButtonCollege, #statusButtonShadharonBima, #statusButtonRDA, #statusButtonShahebBazar, 
+   #statusButtonKumarpara, #statusButtonBiddutVobon, #statusButtonKolabagan, #statusButtonMedical, 
+   #statusButtonPoromanu, #statusButtonBTV, #statusButtonCircuitHouse, #statusButtonNovoTheater, #statusButtonKatakhali, 
+   #statusButtonMiapur, #statusButtonBindurMor, #statusButtonTalaimari
+ {
       font-size: 28px; padding: 18px 50px; border-radius: 50px; margin-bottom: 20px;
       transition: transform 0.4s cubic-bezier(0.68,-0.55,0.265,1.55), box-shadow 0.4s ease;
     }
@@ -84,6 +92,7 @@
     }
     .card:hover { transform: translateY(-5px); box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
     .card h2 { font-size: 26px; margin-bottom: 20px; color: #444; }
+
 
     .info-card {
       --accent: #6c63ff;
@@ -122,16 +131,17 @@
     .info-card.source { --accent: #8e2de2; }
     .info-card.feeder { --accent: #2196f3; }
 
+
 button.on, button.off {
   display: none;
 }
-
 
   </style>
 </head>
 <body>
 
 </div>
+
 
   <!-- Top "Source" Card -->
   <div class="info-card source">
@@ -150,26 +160,37 @@ button.on, button.off {
     </div>
   <hr style="margin:20px 0; opacity:.2;">
 
-  <!-- Miapur -->
-  <button id="statusButtonMiapur">Miapur</button>
-  <div id="timerMiapur">00:00:00:00</div>
-  <div id="buttonAreaMiapur">
-    <button id="onButtonMiapur" class="on">ON</button>
-    <button id="offButtonMiapur" class="off">OFF</button>
-    <div id="lastInterruptionMiapur">Last Interruption: --</div>
-  </div>
+    <!-- Miapur -->
+    <button id="statusButtonMiapur">Miapur</button>
+    <div id="timerMiapur">00:00:00:00</div>
+    <div id="buttonAreaMiapur">
+      <button id="onButtonMiapur" class="on">ON</button>
+      <button id="offButtonMiapur" class="off">OFF</button>
+      <div id="lastInterruptionMiapur">Last Interruption: --</div>
+    </div>
   <hr style="margin:20px 0; opacity:.2;">
 
-  <!-- City Central -->
-  <button id="statusButtonCityCentral">City Central</button>
-  <div id="timerCityCentral">00:00:00:00</div>
-  <div id="buttonAreaCityCentral">
-    <button id="onButtonCityCentral" class="on">ON</button>
-    <button id="offButtonCityCentral" class="off">OFF</button>
-    <div id="lastInterruptionCityCentral">Last Interruption: --</div>
-  </div>
-</div>
+    <!-- Bindur Mor -->
+    <button id="statusButtonBindurMor">Bindur Mor</button>
+    <div id="timerBindurMor">00:00:00:00</div>
+    <div id="buttonAreaBindurMor">
+      <button id="onButtonBindurMor" class="on">ON</button>
+      <button id="offButtonBindurMor" class="off">OFF</button>
+      <div id="lastInterruptionBindurMor">Last Interruption: --</div>
+    </div>
+  <hr style="margin:20px 0; opacity:.2;">
 
+    <!-- Talaimari -->
+    <button id="statusButtonTalaimari">Talaimari</button>
+    <div id="timerTalaimari">00:00:00:00</div>
+    <div id="buttonAreaTalaimari">
+      <button id="onButtonTalaimari" class="on">ON</button>
+      <button id="offButtonTalaimari" class="off">OFF</button>
+      <div id="lastInterruptionTalaimari">Last Interruption: --</div>
+    </div>
+  <hr style="margin:20px 0; opacity:.2;">
+  
+  </div>
 
 <!-- "Feeder" Card (before Sultanabad) -->
 <div class="info-card feeder">
@@ -177,82 +198,150 @@ button.on, button.off {
   <h2>Feeder</h2>
 </div>
 
-<!-- Sultanabad Card -->
+<!-- College Card -->
 <div class="card">
-  <button id="statusButton">Sultanabad</button>
-  <div id="timer">00:00:00</div>
-  <div id="buttonArea">
-    <button id="onButton" class="on">ON</button>
-    <button id="offButton" class="off">OFF</button>
-    <div id="lastInterruption">Last Interruption: --</div>
+  <button id="statusButtonCollege">College</button>
+  <div id="timerCollege">00:00:00</div>
+  <div id="buttonAreaCollege">
+    <button id="onButtonCollege" class="on">ON</button>
+    <button id="offButtonCollege" class="off">OFF</button>
+    <div id="lastInterruptionCollege">Last Interruption: --</div>
   </div>
 </div>
 
-<!-- Town Card -->
+
+<!-- Shadharon Bima Card -->
 <div class="card">
-  <button id="statusButtonTown">Town</button>
-  <div id="timerTown">00:00:00</div>
-  <div id="buttonAreaTown">
-    <button id="onButtonTown" class="on">ON</button>
-    <button id="offButtonTown" class="off">OFF</button>
-    <div id="lastInterruptionTown">Last Interruption: --</div>
+  <button id="statusButtonShadharonBima">Shadharon Bima</button>
+  <div id="timerShadharonBima">00:00:00</div>
+  <div id="buttonAreaShadharonBima">
+    <button id="onButtonShadharonBima" class="on">ON</button>
+    <button id="offButtonShadharonBima" class="off">OFF</button>
+    <div id="lastInterruptionShadharonBima">Last Interruption: --</div>
   </div>
 </div>
 
-<!-- Greater Road Card -->
+
+<!-- RDA Card -->
 <div class="card">
-  <button id="statusButtonGreaterRoad">Greater Road</button>
-  <div id="timerGreaterRoad">00:00:00</div>
-  <div id="buttonAreaGreaterRoad">
-    <button id="onButtonGreaterRoad" class="on">ON</button>
-    <button id="offButtonGreaterRoad" class="off">OFF</button>
-    <div id="lastInterruptionGreaterRoad">Last Interruption: --</div>
+  <button id="statusButtonRDA">RDA</button>
+  <div id="timerRDA">00:00:00</div>
+  <div id="buttonAreaRDA">
+    <button id="onButtonRDA" class="on">ON</button>
+    <button id="offButtonRDA" class="off">OFF</button>
+    <div id="lastInterruptionRDA">Last Interruption: --</div>
   </div>
 </div>
 
-<!-- New Market Card -->
+
+<!-- Shaheb Bazar Card -->
 <div class="card">
-  <button id="statusButtonNewMarket">New Market</button>
-  <div id="timerNewMarket">00:00:00</div>
-  <div id="buttonAreaNewMarket">
-    <button id="onButtonNewMarket" class="on">ON</button>
-    <button id="offButtonNewMarket" class="off">OFF</button>
-    <div id="lastInterruptionNewMarket">Last Interruption: --</div>
+  <button id="statusButtonShahebBazar">Shaheb Bazar</button>
+  <div id="timerShahebBazar">00:00:00</div>
+  <div id="buttonAreaShahebBazar">
+    <button id="onButtonShahebBazar" class="on">ON</button>
+    <button id="offButtonShahebBazar" class="off">OFF</button>
+    <div id="lastInterruptionShahebBazar">Last Interruption: --</div>
   </div>
 </div>
 
-<!-- Omar Plaza Card -->
+
+<!-- Kumarpara Card -->
 <div class="card">
-  <button id="statusButtonOmar">Omar Plaza</button>
-  <div id="timerOmar">00:00:00</div>
-  <div id="buttonAreaOmar">
-    <button id="onButtonOmar" class="on">ON</button>
-    <button id="offButtonOmar" class="off">OFF</button>
-    <div id="lastInterruptionOmar">Last Interruption: --</div>
+  <button id="statusButtonKumarpara">Kumarpara</button>
+  <div id="timerKumarpara">00:00:00</div>
+  <div id="buttonAreaKumarpara">
+    <button id="onButtonKumarpara" class="on">ON</button>
+    <button id="offButtonKumarpara" class="off">OFF</button>
+    <div id="lastInterruptionKumarpara">Last Interruption: --</div>
   </div>
 </div>
 
-<!-- Nagar Bhaban Card -->
+
+<!-- Biddut Vobon Card -->
 <div class="card">
-  <button id="statusButtonNagar">Nagar Bhaban</button>
-  <div id="timerNagar">00:00:00</div>
-  <div id="buttonAreaNagar">
-    <button id="onButtonNagar" class="on">ON</button>
-    <button id="offButtonNagar" class="off">OFF</button>
-    <div id="lastInterruptionNagar">Last Interruption: --</div>
+  <button id="statusButtonBiddutVobon">Biddut Vobon</button>
+  <div id="timerBiddutVobon">00:00:00</div>
+  <div id="buttonAreaBiddutVobon">
+    <button id="onButtonBiddutVobon" class="on">ON</button>
+    <button id="offButtonBiddutVobon" class="off">OFF</button>
+    <div id="lastInterruptionBiddutVobon">Last Interruption: --</div>
   </div>
 </div>
 
-<!-- Data Center Card -->
+
+<!-- Kolabagan Card -->
 <div class="card">
-  <button id="statusButtonData">Data Center</button>
-  <div id="timerData">00:00:00</div>
-  <div id="buttonAreaData">
-    <button id="onButtonData" class="on">ON</button>
-    <button id="offButtonData" class="off">OFF</button>
-    <div id="lastInterruptionData">Last Interruption: --</div>
+  <button id="statusButtonKolabagan">Kolabagan</button>
+  <div id="timerKolabagan">00:00:00</div>
+  <div id="buttonAreaKolabagan">
+    <button id="onButtonKolabagan" class="on">ON</button>
+    <button id="offButtonKolabagan" class="off">OFF</button>
+    <div id="lastInterruptionKolabagan">Last Interruption: --</div>
   </div>
 </div>
+
+
+<!-- Medical Card -->
+<div class="card">
+  <button id="statusButtonMedical">Medical</button>
+  <div id="timerMedical">00:00:00</div>
+  <div id="buttonAreaMedical">
+    <button id="onButtonMedical" class="on">ON</button>
+    <button id="offButtonMedical" class="off">OFF</button>
+    <div id="lastInterruptionMedical">Last Interruption: --</div>
+  </div>
+</div>
+
+
+<!-- Poromanu Card -->
+<div class="card">
+  <button id="statusButtonPoromanu">Poromanu</button>
+  <div id="timerPoromanu">00:00:00</div>
+  <div id="buttonAreaPoromanu">
+    <button id="onButtonPoromanu" class="on">ON</button>
+    <button id="offButtonPoromanu" class="off">OFF</button>
+    <div id="lastInterruptionPoromanu">Last Interruption: --</div>
+  </div>
+</div>
+
+
+<!-- BTV Card -->
+<div class="card">
+  <button id="statusButtonBTV">BTV</button>
+  <div id="timerBTV">00:00:00</div>
+  <div id="buttonAreaBTV">
+    <button id="onButtonBTV" class="on">ON</button>
+    <button id="offButtonBTV" class="off">OFF</button>
+    <div id="lastInterruptionBTV">Last Interruption: --</div>
+  </div>
+</div>
+
+
+<!-- Circuit House Card -->
+<div class="card">
+  <button id="statusButtonCircuitHouse">Circuit House</button>
+  <div id="timerCircuitHouse">00:00:00</div>
+  <div id="buttonAreaCircuitHouse">
+    <button id="onButtonCircuitHouse" class="on">ON</button>
+    <button id="offButtonCircuitHouse" class="off">OFF</button>
+    <div id="lastInterruptionCircuitHouse">Last Interruption: --</div>
+  </div>
+</div>
+
+
+<!-- Novo Theater Card -->
+<div class="card">
+  <button id="statusButtonNovoTheater">Novo Theater</button>
+  <div id="timerNovoTheater">00:00:00</div>
+  <div id="buttonAreaNovoTheater">
+    <button id="onButtonNovoTheater" class="on">ON</button>
+    <button id="offButtonNovoTheater" class="off">OFF</button>
+    <div id="lastInterruptionNovoTheater">Last Interruption: --</div>
+  </div>
+</div>
+
+
 
 <br>
 <!-- Download and Share Buttons -->
@@ -291,17 +380,24 @@ button.on, button.off {
 
   // --- Stations configuration (keeps all IDs and behavior unchanged) ---
   const stations = [
-    { name: 'Sultanabad', statDoc: 'f1_stat', logsCol: 'f1_logs', lastDoc: 'f1_last', ids: {statusBtn:'statusButton', timer:'timer', on:'onButton', off:'offButton', last:'lastInterruption'} },
-    { name: 'Town', statDoc: 'f2_stat', logsCol: 'f2_logs', lastDoc: 'f2_last', ids: {statusBtn:'statusButtonTown', timer:'timerTown', on:'onButtonTown', off:'offButtonTown', last:'lastInterruptionTown'} },
-    { name: 'Greater Road', statDoc: 'f3_stat', logsCol: 'f3_logs', lastDoc: 'f3_last', ids: {statusBtn:'statusButtonGreaterRoad', timer:'timerGreaterRoad', on:'onButtonGreaterRoad', off:'offButtonGreaterRoad', last:'lastInterruptionGreaterRoad'} },
-    { name: 'New Market', statDoc: 'f4_stat', logsCol: 'f4_logs', lastDoc: 'f4_last', ids: {statusBtn:'statusButtonNewMarket', timer:'timerNewMarket', on:'onButtonNewMarket', off:'offButtonNewMarket', last:'lastInterruptionNewMarket'} },
-    { name: 'Omar Plaza', statDoc: 'f5_stat', logsCol: 'f5_logs', lastDoc: 'f5_last', ids: {statusBtn:'statusButtonOmar', timer:'timerOmar', on:'onButtonOmar', off:'offButtonOmar', last:'lastInterruptionOmar'} },
-    { name: 'Nagar Bhaban', statDoc: 'f6_stat', logsCol: 'f6_logs', lastDoc: 'f6_last', ids: {statusBtn:'statusButtonNagar', timer:'timerNagar', on:'onButtonNagar', off:'offButtonNagar', last:'lastInterruptionNagar'} },
-    { name: 'Data Center', statDoc: 'f7_stat', logsCol: 'f7_logs', lastDoc: 'f7_last', ids: {statusBtn:'statusButtonData', timer:'timerData', on:'onButtonData', off:'offButtonData', last:'lastInterruptionData'} },
-    { name: 'Katakhali', statDoc: 'f8_stat', logsCol: 'f8_logs', lastDoc: 'f8_last', ids: {statusBtn:'statusButtonKatakhali', timer:'timerKatakhali', on:'onButtonKatakhali', off:'offButtonKatakhali', last:'lastInterruptionKatakhali'} },
-    { name: 'Miapur', statDoc: 'f9_stat', logsCol: 'f9_logs', lastDoc: 'f9_last', ids: {statusBtn:'statusButtonMiapur', timer:'timerMiapur', on:'onButtonMiapur', off:'offButtonMiapur', last:'lastInterruptionMiapur'} },
-    { name: 'City Central', statDoc: 'f10_stat', logsCol: 'f10_logs', lastDoc: 'f10_last', ids: {statusBtn:'statusButtonCityCentral', timer:'timerCityCentral', on:'onButtonCityCentral', off:'offButtonCityCentral', last:'lastInterruptionCityCentral'} }
-  ];
+    { name: 'College', statDoc: 'f11_stat', logsCol: 'f11_logs', lastDoc: 'f11_last', ids: {statusBtn:'statusButtonCollege', timer:'timerCollege', on:'onButtonCollege', off:'offButtonCollege', last:'lastInterruptionCollege'} },
+    { name: 'Shadharon Bima', statDoc: 'f12_stat', logsCol: 'f12_logs', lastDoc: 'f12_last', ids: {statusBtn:'statusButtonShadharonBima', timer:'timerShadharonBima', on:'onButtonShadharonBima', off:'offButtonShadharonBima', last:'lastInterruptionShadharonBima'} },
+    { name: 'RDA', statDoc: 'f13_stat', logsCol: 'f13_logs', lastDoc: 'f13_last', ids: {statusBtn:'statusButtonRDA', timer:'timerRDA', on:'onButtonRDA', off:'offButtonRDA', last:'lastInterruptionRDA'} },
+    { name: 'Shaheb Bazar', statDoc: 'f14_stat', logsCol: 'f14_logs', lastDoc: 'f14_last', ids: {statusBtn:'statusButtonShahebBazar', timer:'timerShahebBazar', on:'onButtonShahebBazar', off:'offButtonShahebBazar', last:'lastInterruptionShahebBazar'} },
+    { name: 'Kumarpara', statDoc: 'f15_stat', logsCol: 'f15_logs', lastDoc: 'f15_last', ids: {statusBtn:'statusButtonKumarpara', timer:'timerKumarpara', on:'onButtonKumarpara', off:'offButtonKumarpara', last:'lastInterruptionKumarpara'} },
+    { name: 'Biddut Vobon', statDoc: 'f16_stat', logsCol: 'f16_logs', lastDoc: 'f16_last', ids: {statusBtn:'statusButtonBiddutVobon', timer:'timerBiddutVobon', on:'onButtonBiddutVobon', off:'offButtonBiddutVobon', last:'lastInterruptionBiddutVobon'} },
+    { name: 'Kolabagan', statDoc: 'f17_stat', logsCol: 'f17_logs', lastDoc: 'f17_last', ids: {statusBtn:'statusButtonKolabagan', timer:'timerKolabagan', on:'onButtonKolabagan', off:'offButtonKolabagan', last:'lastInterruptionKolabagan'} },
+    { name: 'Medical', statDoc: 'f18_stat', logsCol: 'f18_logs', lastDoc: 'f18_last', ids: {statusBtn:'statusButtonMedical', timer:'timerMedical', on:'onButtonMedical', off:'offButtonMedical', last:'lastInterruptionMedical'} },
+    { name: 'Poromanu', statDoc: 'f19_stat', logsCol: 'f19_logs', lastDoc: 'f19_last', ids: {statusBtn:'statusButtonPoromanu', timer:'timerPoromanu', on:'onButtonPoromanu', off:'offButtonPoromanu', last:'lastInterruptionPoromanu'} },
+    { name: 'BTV', statDoc: 'f20_stat', logsCol: 'f20_logs', lastDoc: 'f20_last', ids: {statusBtn:'statusButtonBTV', timer:'timerBTV', on:'onButtonBTV', off:'offButtonBTV', last:'lastInterruptionBTV'} },
+    { name: 'Circuit House', statDoc: 'f21_stat', logsCol: 'f21_logs', lastDoc: 'f21_last', ids: {statusBtn:'statusButtonCircuitHouse', timer:'timerCircuitHouse', on:'onButtonCircuitHouse', off:'offButtonCircuitHouse', last:'lastInterruptionCircuitHouse'} },
+    { name: 'Novo Theater', statDoc: 'f22_stat', logsCol: 'f22_logs', lastDoc: 'f22_last', ids: {statusBtn:'statusButtonNovoTheater', timer:'timerNovoTheater', on:'onButtonNovoTheater', off:'offButtonNovoTheater', last:'lastInterruptionNovoTheater'} },
+    { name: 'Katakhali', statDoc: 'f23_stat', logsCol: 'f23_logs', lastDoc: 'f23_last', ids: {statusBtn:'statusButtonKatakhali', timer:'timerKatakhali', on:'onButtonKatakhali', off:'offButtonKatakhali', last:'lastInterruptionKatakhali'} },
+    { name: 'Miapur', statDoc: 'f24_stat', logsCol: 'f24_logs', lastDoc: 'f24_last', ids: {statusBtn:'statusButtonMiapur', timer:'timerMiapur', on:'onButtonMiapur', off:'offButtonMiapur', last:'lastInterruptionMiapur'} },
+    { name: 'Bindur Mor', statDoc: 'f25_stat', logsCol: 'f25_logs', lastDoc: 'f25_last', ids: {statusBtn:'statusButtonBindurMor', timer:'timerBindurMor', on:'onButtonBindurMor', off:'offButtonBindurMor', last:'lastInterruptionBindurMor'} },
+    { name: 'Talaimari', statDoc: 'f26_stat', logsCol: 'f26_logs', lastDoc: 'f26_last', ids: {statusBtn:'statusButtonTalaimari', timer:'timerTalaimari', on:'onButtonTalaimari', off:'offButtonTalaimari', last:'lastInterruptionTalaimari'} },
+];
+
 
   // Create maps for Firestore refs and DOM elements
   const statusDocs = {};
@@ -311,9 +407,9 @@ button.on, button.off {
   const timerIntervals = {};
 
   stations.forEach(s => {
-    statusDocs[s.name] = db.collection('Substation').doc(s.statDoc);
+    statusDocs[s.name] = db.collection('Substation2').doc(s.statDoc);
     logsCols[s.name] = db.collection(s.logsCol);
-    lastDocs[s.name] = db.collection('Substation').doc(s.lastDoc);
+    lastDocs[s.name] = db.collection('Substation2').doc(s.lastDoc);
 
     elems[s.name] = {
       statusBtn: document.getElementById(s.ids.statusBtn),
@@ -406,7 +502,7 @@ button.on, button.off {
     }
     await logsColRef.add({ action: isOn ? "ON" : "OFF", timestamp: nowISO, location });
 
-    const isSpecial = (location === "Katakhali" || location === "Miapur" || location === "City Central");
+    const isSpecial = (location === "Katakhali" || location === "Miapur" || location === "Bindur Mor");
 
     if (isSpecial) {
       // SPECIAL: update Last Interruption ONLY when OFF is pressed (ON->OFF), and update the DOM immediately
@@ -434,9 +530,12 @@ button.on, button.off {
     fetchLogs();
   }
 
+
+
+  
   function updateUI(button, timerEl, state, time, onBtnEl, offBtnEl, location) {
     animateButton(button, state);
-    const isSpecial = (location === "Katakhali" || location === "Miapur" || location === "City Central");
+    const isSpecial = (location === "Katakhali" || location === "Miapur" || location === "Bindur Mor" || location === "Talaimari");
     const holder = timerIntervals[location];
 
     if (state === "ON") {
@@ -471,52 +570,59 @@ button.on, button.off {
       snap.docs.forEach(d => allLogs.push({ ...d.data(), location }));
     });
 
-    allLogs.sort((a,b)=> new Date(a.timestamp)-new Date(b.timestamp));
+    allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-    logTable.innerHTML = '';
+    if (allLogs.length === 0) {
+      console.log("No logs available to display.");
+      return; // No logs to display
+    }
+
+    logTable.innerHTML = ''; // Clear the table
 
     let lastOff = {};
     let lastOnSpecial = {};
 
-    allLogs.forEach(data=>{
-      let interruptionTime='--';
+    allLogs.forEach(data => {
+      let interruptionTime = '--';
 
       if (data.action === "ON") {
-        const isSpecial = (data.location==="Katakhali"||data.location==="Miapur"||data.location==="City Central");
+        const isSpecial = (data.location === "Katakhali" || data.location === "Miapur" || data.location === "Bindur Mor" || data.location === "Talaimari");
         const lastOffAction = lastOff[data.location];
 
         if (!isSpecial && lastOffAction) {
           const offTime = new Date(lastOffAction.timestamp);
           const onTime = new Date(data.timestamp);
           const diffMs = onTime - offTime;
-          if (diffMs>=0) {
-            const h=String(Math.floor(diffMs/3600000)).padStart(2,'0');
-            const m=String(Math.floor((diffMs%3600000)/60000)).padStart(2,'0');
-            const s=String(Math.floor((diffMs%60000)/1000)).padStart(2,'0');
+          if (diffMs >= 0) {
+            const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
+            const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
+            const s = String(Math.floor((diffMs % 60000) / 1000)).padStart(2, '0');
             interruptionTime = `${h}:${m}:${s}`;
           }
         }
-        if (data.location==="Katakhali") lastOnSpecial.Katakhali=data;
-        else if (data.location==="Miapur") lastOnSpecial.Miapur=data;
-        else if (data.location==="City Central") lastOnSpecial.CityCentral=data;
+        if (data.location === "Katakhali") lastOnSpecial.Katakhali = data;
+        else if (data.location === "Miapur") lastOnSpecial.Miapur = data;
+        else if (data.location === "Bindur Mor") lastOnSpecial.BindurMor = data;
+        else if (data.location === "Talaimari") lastOnSpecial.Talaimari = data;
       }
 
-      if (data.action==="OFF" && (data.location==="Katakhali"||data.location==="Miapur"||data.location==="City Central")) {
-        const lastOnAction = data.location==="Katakhali"?lastOnSpecial.Katakhali:
-                             data.location==="Miapur"?lastOnSpecial.Miapur:lastOnSpecial.CityCentral;
+      if (data.action === "OFF" && (data.location === "Katakhali" || data.location === "Miapur" || data.location === "Bindur Mor" || data.location === "Talaimari")) {
+        const lastOnAction = data.location === "Katakhali" ? lastOnSpecial.Katakhali :
+                             data.location === "Miapur" ? lastOnSpecial.Miapur :
+                             data.location === "Bindur Mor" ? lastOnSpecial.BindurMor : lastOnSpecial.Talaimari;
         if (lastOnAction) {
           const diffMs = new Date(data.timestamp) - new Date(lastOnAction.timestamp);
-          if (diffMs>=0) interruptionTime = formatDHMS(diffMs);
+          if (diffMs >= 0) interruptionTime = formatDHMS(diffMs);
         }
       }
 
-      if (data.action==="OFF") {
+      if (data.action === "OFF") {
         lastOff[data.location] = data;
       }
 
       const logDate = new Date(data.timestamp);
       const dateFormatted = logDate.toLocaleDateString('en-GB');
-      const timeFormatted = logDate.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
+      const timeFormatted = logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
       const row = document.createElement('tr');
       row.innerHTML = `
@@ -526,9 +632,10 @@ button.on, button.off {
         <td>${data.location}</td>
         <td>${interruptionTime}</td>
       `;
-      logTable.prepend(row);
+      logTable.prepend(row); // Add rows dynamically
     });
   }
+
 
   // default updater (non-special)
   async function updateLastInterruption(logsColRef, lastInterruptionDocRef, location, lastDiv) {
@@ -561,7 +668,7 @@ button.on, button.off {
       } else if (data.currentStatus === "OFF") {
         updateUI(button, timerEl, "OFF", data.f_off, onBtnEl, offBtnEl, location);
         // SPECIAL: when OFF, keep reset (do not freeze)
-        if (location==="Katakhali"||location==="Miapur"||location==="City Central") {
+        if (location==="Katakhali"||location==="Miapur"||location==="Bindur Mor"||location==="Talaimari") {
           const holder = timerIntervals[location];
           stopTimer(timerEl, holder, "00:00:00:00");
         }
@@ -591,6 +698,8 @@ button.on, button.off {
     el.onBtn.onclick = () => handleButtonClick(statusDocRef, logsColRef, s.name, el.statusBtn, el.timer, el.onBtn, el.offBtn, lastDocRef, true);
     el.offBtn.onclick = () => handleButtonClick(statusDocRef, logsColRef, s.name, el.statusBtn, el.timer, el.onBtn, el.offBtn, lastDocRef, false);
   });
+
+
 
   let generatedExcelBlob = null;  // Global variable to store the Blob
 
@@ -635,8 +744,8 @@ button.on, button.off {
           }
         }
 
-        if (data.action === "OFF" && (data.location === "Katakhali" || data.location === "Miapur" || data.location === "City Central")) {
-          const lastOnAction = data.location === "Katakhali" ? lastOnSpecial.Katakhali : data.location === "Miapur" ? lastOnSpecial.Miapur : lastOnSpecial.CityCentral;
+        if (data.action === "OFF" && (data.location === "Katakhali" || data.location === "Miapur" || data.location === "Bindur Mor" || data.location === "Talaimari")) {
+          const lastOnAction = data.location === "Katakhali" ? lastOnSpecial.Katakhali : data.location === "Miapur" ? lastOnSpecial.Miapur: data.location === "Bindur Mor" ? lastOnSpecial.BindurMor : lastOnSpecial.Talaimari;
           if (lastOnAction) {
             const onTime = new Date(lastOnAction.timestamp);
             const offTime = new Date(data.timestamp);
@@ -652,7 +761,8 @@ button.on, button.off {
         } else if (data.action === "ON") {
           if (data.location === "Katakhali") lastOnSpecial.Katakhali = data;
           else if (data.location === "Miapur") lastOnSpecial.Miapur = data;
-          else if (data.location === "City Central") lastOnSpecial.CityCentral = data;
+          else if (data.location === "Bindur Mor") lastOnSpecial.BindurMor = data;
+          else if (data.location === "Talaimari") lastOnSpecial.Talaimari = data;
         }
 
         return {
@@ -740,6 +850,7 @@ button.on, button.off {
   });
 
 </script>
+
 
 
 </body>
