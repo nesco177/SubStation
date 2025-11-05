@@ -1,1 +1,748 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ON/OFF Logger - Updated Firestore (Refactored)</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+     body {
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      margin-top: 50px;
+      background: linear-gradient(145deg, #f0f0f0, #dcdcdc);
+      padding: 0;
+      margin: 0;
+      color: #333;
+    }
+    button {
+      font-size: 18px;
+      padding: 14px 36px;
+      margin: 15px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: bold;
+      position: relative;
+      background: #ffffff;
+      transition: transform 0.3s ease, background 0.5s ease, color 0.4s ease;
+      color: #333;
+      user-select: none;
+    }
+    .on { background: linear-gradient(145deg, #4caf50, #45a049); color: white; }
+    .off { background: linear-gradient(145deg, #f44336, #e53935); color: white; }
+    button:hover { transform: scale(1.08); transition: transform 0.3s ease; }
+    button:focus { outline: none; }
+    button:active { transform: scale(0.95); }
+    .on:active { background: linear-gradient(145deg, #45a049, #4caf50); }
+    .off:active { background: linear-gradient(145deg, #e53935, #f44336); }
+    @keyframes pulse { 0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)} }
+    .on:active, .off:active { animation: pulse 0.8s ease-out; }
+    button:disabled { background: #ddd; color: #aaa; cursor: not-allowed; }
+
+    .download { background: linear-gradient(145deg, #2196f3, #1976d2); color: white; }
+    #loading { display: none; font-size: 18px; color: green; }
+
+    #timer, #timerTown, #timerGreaterRoad , #timerNewMarket,
+    #timerOmar, #timerNagar, #timerData,
+    #timerKatakhali, #timerMiapur, #timerCityCentral {
+      font-size: 36px; margin: 20px; font-weight: bold; color: #333;
+    }
+
+    #buttonArea, #buttonAreaTown, #buttonAreaGreaterRoad, #buttonAreaNewMarket,
+    #buttonAreaOmar, #buttonAreaNagar, #buttonAreaData,
+    #buttonAreaKatakhali, #buttonAreaMiapur, #buttonAreaCityCentral { margin-bottom: 30px; }
+
+    #lastInterruption, #lastInterruptionTown, #lastInterruptionGreaterRoad, #lastInterruptionNewMarket,
+    #lastInterruptionOmar, #lastInterruptionNagar, #lastInterruptionData,
+    #lastInterruptionKatakhali, #lastInterruptionMiapur, #lastInterruptionCityCentral {
+      margin-top: 20px; font-size: 22px; background: white; display: inline-block;
+      padding: 15px 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      color: #555; font-weight: bold; transition: opacity 0.5s ease, transform 0.3s ease;
+    }
+
+    table {
+      margin: 40px auto; border-collapse: collapse; background: white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); border-radius: 10px;
+    }
+    th, td { padding: 12px 25px; border: 1px solid #ccc; font-size: 16px; text-align: center; }
+    th { background-color: #f1f1f1; color: #555; }
+    tr:hover { background-color: #f9f9f9; transform: scale(1.02); }
+
+    #statusButton, #statusButtonTown, #statusButtonGreaterRoad, #statusButtonNewMarket,
+    #statusButtonOmar, #statusButtonNagar, #statusButtonData,
+    #statusButtonKatakhali, #statusButtonMiapur, #statusButtonCityCentral {
+      font-size: 28px; padding: 18px 50px; border-radius: 50px; margin-bottom: 20px;
+      transition: transform 0.4s cubic-bezier(0.68,-0.55,0.265,1.55), box-shadow 0.4s ease;
+    }
+
+    .card {
+      background: #ffffff; border-radius: 20px; box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+      padding: 30px 20px; margin: 20px auto; width: 90%; max-width: 600px; transition: all 0.3s ease;
+    }
+    .card:hover { transform: translateY(-5px); box-shadow: 0 10px 24px rgba(0,0,0,0.15); }
+    .card h2 { font-size: 26px; margin-bottom: 20px; color: #444; }
+
+    .info-card {
+      --accent: #6c63ff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 18px;
+      padding: 20px 32px;
+      border-radius: 20px;
+      border-left: 8px solid var(--accent);
+      background: linear-gradient(135deg, #bcffbb, #f8f8fb);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+      width: 90%;
+      max-width: 500px;
+      margin: 20px auto;
+      text-align: center;
+    }
+    .info-card .icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 35px;
+      color: var(--accent);
+      background: #f2f3ff;
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,0.05);
+    }
+    .info-card h2 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .info-card.source { --accent: #8e2de2; }
+    .info-card.feeder { --accent: #2196f3; }
+
+
+    
+button.on, button.off {
+  display: none;
+}
+  </style>
+</head>
+<body>
+
+</div>
+
+  <!-- Top "Source" Card -->
+  <div class="info-card source">
+    <span class="icon">⚡</span>
+    <h2>Source</h2>
+  </div>
+
+  <div class="card">
+    <!-- Katakhali -->
+    <button id="statusButtonKatakhali">Katakhali</button>
+    <div id="timerKatakhali">00:00:00:00</div>
+    <div id="buttonAreaKatakhali">
+      <button id="onButtonKatakhali" class="on">ON</button>
+      <button id="offButtonKatakhali" class="off">OFF</button>
+      <div id="lastInterruptionKatakhali">Last Interruption: --</div>
+    </div>
+  <hr style="margin:20px 0; opacity:.2;">
+
+  <!-- Miapur -->
+  <button id="statusButtonMiapur">Miapur</button>
+  <div id="timerMiapur">00:00:00:00</div>
+  <div id="buttonAreaMiapur">
+    <button id="onButtonMiapur" class="on">ON</button>
+    <button id="offButtonMiapur" class="off">OFF</button>
+    <div id="lastInterruptionMiapur">Last Interruption: --</div>
+  </div>
+  <hr style="margin:20px 0; opacity:.2;">
+
+  <!-- City Central -->
+  <button id="statusButtonCityCentral">City Central</button>
+  <div id="timerCityCentral">00:00:00:00</div>
+  <div id="buttonAreaCityCentral">
+    <button id="onButtonCityCentral" class="on">ON</button>
+    <button id="offButtonCityCentral" class="off">OFF</button>
+    <div id="lastInterruptionCityCentral">Last Interruption: --</div>
+  </div>
+</div>
+
+
+<!-- "Feeder" -->
+<div class="info-card feeder">
+  <span class="icon">🔌</span>
+  <h2>Feeder</h2>
+</div>
+
+<!-- Sultanabad Card -->
+<div class="card">
+  <button id="statusButton">Sultanabad</button>
+  <div id="timer">00:00:00</div>
+  <div id="buttonArea">
+    <button id="onButton" class="on">ON</button>
+    <button id="offButton" class="off">OFF</button>
+    <div id="lastInterruption">Last Interruption: --</div>
+  </div>
+</div>
+
+<!-- Town Card -->
+<div class="card">
+  <button id="statusButtonTown">Town</button>
+  <div id="timerTown">00:00:00</div>
+  <div id="buttonAreaTown">
+    <button id="onButtonTown" class="on">ON</button>
+    <button id="offButtonTown" class="off">OFF</button>
+    <div id="lastInterruptionTown">Last Interruption: --</div>
+  </div>
+</div>
+
+<!-- Greater Road Card -->
+<div class="card">
+  <button id="statusButtonGreaterRoad">Greater Road</button>
+  <div id="timerGreaterRoad">00:00:00</div>
+  <div id="buttonAreaGreaterRoad">
+    <button id="onButtonGreaterRoad" class="on">ON</button>
+    <button id="offButtonGreaterRoad" class="off">OFF</button>
+    <div id="lastInterruptionGreaterRoad">Last Interruption: --</div>
+  </div>
+</div>
+
+<!-- New Market Card -->
+<div class="card">
+  <button id="statusButtonNewMarket">New Market</button>
+  <div id="timerNewMarket">00:00:00</div>
+  <div id="buttonAreaNewMarket">
+    <button id="onButtonNewMarket" class="on">ON</button>
+    <button id="offButtonNewMarket" class="off">OFF</button>
+    <div id="lastInterruptionNewMarket">Last Interruption: --</div>
+  </div>
+</div>
+
+<!-- Omar Plaza Card -->
+<div class="card">
+  <button id="statusButtonOmar">Omar Plaza</button>
+  <div id="timerOmar">00:00:00</div>
+  <div id="buttonAreaOmar">
+    <button id="onButtonOmar" class="on">ON</button>
+    <button id="offButtonOmar" class="off">OFF</button>
+    <div id="lastInterruptionOmar">Last Interruption: --</div>
+  </div>
+</div>
+
+<!-- Nagar Bhaban Card -->
+<div class="card">
+  <button id="statusButtonNagar">Nagar Bhaban</button>
+  <div id="timerNagar">00:00:00</div>
+  <div id="buttonAreaNagar">
+    <button id="onButtonNagar" class="on">ON</button>
+    <button id="offButtonNagar" class="off">OFF</button>
+    <div id="lastInterruptionNagar">Last Interruption: --</div>
+  </div>
+</div>
+
+<!-- Data Center Card -->
+<div class="card">
+  <button id="statusButtonData">Data Center</button>
+  <div id="timerData">00:00:00</div>
+  <div id="buttonAreaData">
+    <button id="onButtonData" class="on">ON</button>
+    <button id="offButtonData" class="off">OFF</button>
+    <div id="lastInterruptionData">Last Interruption: --</div>
+  </div>
+</div>
+
+<br>
+<!-- Download and Share Buttons -->
+<button id="downloadButton" class="download">Download Logs (Excel)</button>
+<p id="loading">Downloading...</p>
+
+<!-- Upload and Reset Buttons under Download -->
+<button id="resetButton" class="reset">Reset</button>
+
+
+
+<table id="logTable" border="1">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Action</th>
+      <th>Time</th>
+      <th>Location</th>
+      <th>Interruption</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+ 
+ const firebaseConfig = {
+    apiKey: "AIzaSyAy53-F5QZ5a0f9DW9emesit1KA2T7v7Do",
+    authDomain: "testt-b241d.firebaseapp.com",
+    projectId: "testt-b241d",
+    storageBucket: "testt-b241d.appspot.com",
+    messagingSenderId: "288476078303",
+    appId: "1:288476078303:android:ff06d4a9d5c432f41ac96a"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  
+  const stations = [
+    { name: 'Sultanabad', statDoc: 'f1_stat', logsCol: 'f1_logs', lastDoc: 'f1_last', ids: {statusBtn:'statusButton', timer:'timer', on:'onButton', off:'offButton', last:'lastInterruption'} },
+    { name: 'Town', statDoc: 'f2_stat', logsCol: 'f2_logs', lastDoc: 'f2_last', ids: {statusBtn:'statusButtonTown', timer:'timerTown', on:'onButtonTown', off:'offButtonTown', last:'lastInterruptionTown'} },
+    { name: 'Greater Road', statDoc: 'f3_stat', logsCol: 'f3_logs', lastDoc: 'f3_last', ids: {statusBtn:'statusButtonGreaterRoad', timer:'timerGreaterRoad', on:'onButtonGreaterRoad', off:'offButtonGreaterRoad', last:'lastInterruptionGreaterRoad'} },
+    { name: 'New Market', statDoc: 'f4_stat', logsCol: 'f4_logs', lastDoc: 'f4_last', ids: {statusBtn:'statusButtonNewMarket', timer:'timerNewMarket', on:'onButtonNewMarket', off:'offButtonNewMarket', last:'lastInterruptionNewMarket'} },
+    { name: 'Omar Plaza', statDoc: 'f5_stat', logsCol: 'f5_logs', lastDoc: 'f5_last', ids: {statusBtn:'statusButtonOmar', timer:'timerOmar', on:'onButtonOmar', off:'offButtonOmar', last:'lastInterruptionOmar'} },
+    { name: 'Nagar Bhaban', statDoc: 'f6_stat', logsCol: 'f6_logs', lastDoc: 'f6_last', ids: {statusBtn:'statusButtonNagar', timer:'timerNagar', on:'onButtonNagar', off:'offButtonNagar', last:'lastInterruptionNagar'} },
+    { name: 'Data Center', statDoc: 'f7_stat', logsCol: 'f7_logs', lastDoc: 'f7_last', ids: {statusBtn:'statusButtonData', timer:'timerData', on:'onButtonData', off:'offButtonData', last:'lastInterruptionData'} },
+    { name: 'Katakhali', statDoc: 'f8_stat', logsCol: 'f8_logs', lastDoc: 'f8_last', ids: {statusBtn:'statusButtonKatakhali', timer:'timerKatakhali', on:'onButtonKatakhali', off:'offButtonKatakhali', last:'lastInterruptionKatakhali'} },
+    { name: 'Miapur', statDoc: 'f9_stat', logsCol: 'f9_logs', lastDoc: 'f9_last', ids: {statusBtn:'statusButtonMiapur', timer:'timerMiapur', on:'onButtonMiapur', off:'offButtonMiapur', last:'lastInterruptionMiapur'} },
+    { name: 'City Central', statDoc: 'f10_stat', logsCol: 'f10_logs', lastDoc: 'f10_last', ids: {statusBtn:'statusButtonCityCentral', timer:'timerCityCentral', on:'onButtonCityCentral', off:'offButtonCityCentral', last:'lastInterruptionCityCentral'} }
+  ];
+
+ 
+  const statusDocs = {};
+  const logsCols = {};
+  const lastDocs = {};
+  const elems = {};
+  const timerIntervals = {};
+
+  stations.forEach(s => {
+    statusDocs[s.name] = db.collection('Substation').doc(s.statDoc);
+    logsCols[s.name] = db.collection(s.logsCol);
+    lastDocs[s.name] = db.collection('Substation').doc(s.lastDoc);
+
+    elems[s.name] = {
+      statusBtn: document.getElementById(s.ids.statusBtn),
+      timer: document.getElementById(s.ids.timer),
+      onBtn: document.getElementById(s.ids.on),
+      offBtn: document.getElementById(s.ids.off),
+      lastDiv: document.getElementById(s.ids.last)
+    };
+
+    timerIntervals[s.name] = { timer: null };
+  });
+
+
+  const downloadBtn = document.getElementById('downloadButton');
+  const loadingText = document.getElementById('loading');
+  const logTable = document.getElementById('logTable').querySelector('tbody');
+
+ 
+  function animateButton(button, state) {
+    button.style.transition = "transform 0.4s cubic-bezier(0.68,-0.55,0.265,1.55), box-shadow 0.4s ease";
+    button.style.transform = "scale(1.15)";
+    button.style.boxShadow = state === "ON" ? "0 0 20px 5px rgba(0,255,0,0.6)" : "0 0 20px 5px rgba(255,0,0,0.6)";
+    setTimeout(() => { button.style.transform = "scale(1)"; button.style.boxShadow = "none"; }, 400);
+  }
+
+  function startTimer(element, start, holder) {
+    if (holder.timer) clearInterval(holder.timer);
+    holder.timer = setInterval(() => {
+      const now = new Date();
+      const diff = Math.floor((now - start) / 1000);
+      const h = String(Math.floor(diff / 3600)).padStart(2,'0');
+      const m = String(Math.floor((diff % 3600) / 60)).padStart(2,'0');
+      const s = String(diff % 60).padStart(2,'0');
+      element.textContent = `${h}:${m}:${s}`;
+    }, 1000);
+  }
+
+  function startTimerDays(element, start, holder) {
+    if (holder.timer) clearInterval(holder.timer);
+    holder.timer = setInterval(() => {
+      const now = new Date();
+      const diff = Math.floor((now - start) / 1000);
+      const d = String(Math.floor(diff / 86400)).padStart(2,'0');
+      const h = String(Math.floor((diff % 86400) / 3600)).padStart(2,'0');
+      const m = String(Math.floor((diff % 3600) / 60)).padStart(2,'0');
+      const s = String(diff % 60).padStart(2,'0');
+      element.textContent = `${d}:${h}:${m}:${s}`;
+    }, 1000);
+  }
+
+  function formatDHMS(ms) {
+    const total = Math.max(0, Math.floor(ms/1000));
+    const d = String(Math.floor(total/86400)).padStart(2,'0');
+    const h = String(Math.floor((total%86400)/3600)).padStart(2,'0');
+    const m = String(Math.floor((total%3600)/60)).padStart(2,'0');
+    const s = String(total%60).padStart(2,'0');
+    return `${d}:${h}:${m}:${s}`;
+  }
+
+  function stopTimer(element, holder, resetText="00:00:00") {
+    if (holder.timer) clearInterval(holder.timer);
+    holder.timer = null;
+    element.textContent = resetText;
+  }
+
+  function getLastDivByLocation(location) {
+    return elems[location] ? elems[location].lastDiv : null;
+  }
+  function renderLastDiv(mainText, subText, lastDiv) {
+    if (!lastDiv) return;
+    lastDiv.innerHTML = `\n      <div>${mainText}</div>\n      <div style="font-size:20px;color:#e57373;margin-top:10px;">${subText}</div>\n    `;
+    lastDiv.style.opacity = '0';
+    setTimeout(() => { lastDiv.style.opacity = '1'; }, 100);
+  }
+
+  async function handleButtonClick(statusDocRef, logsColRef, location, button, timerEl, onBtnEl, offBtnEl, lastDocRef, isOn) {
+    onBtnEl.disabled = true;
+    offBtnEl.disabled = true;
+
+    
+    const prevSnap = await statusDocRef.get();
+    const prev = prevSnap.exists ? prevSnap.data() : {};
+    const prevOnISO = prev && prev.f_on ? prev.f_on : null;
+
+    const nowISO = new Date().toISOString();
+    if (isOn) {
+      await statusDocRef.set({ currentStatus: "ON", f_on: nowISO, f_off: null });
+    } else {
+      await statusDocRef.set({ currentStatus: "OFF", f_on: null, f_off: nowISO });
+    }
+    await logsColRef.add({ action: isOn ? "ON" : "OFF", timestamp: nowISO, location });
+
+    const isSpecial = (location === "Katakhali" || location === "Miapur" || location === "City Central");
+
+    if (isSpecial) {
+      
+      if (!isOn) {
+        const lastDiv = getLastDivByLocation(location);
+        let mainText = `Last Interruption: 00:00:00:00`;
+        let subText = new Date(nowISO).toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' });
+        if (prevOnISO) {
+          const diff = new Date(nowISO) - new Date(prevOnISO);
+          const timeStr = new Date(nowISO).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
+                             .replace('am','AM').replace('pm','PM');
+          mainText = `Last Interruption: ${formatDHMS(diff)} at ${timeStr}`;
+        }
+        await lastDocRef.set({ mainText, subText });
+        renderLastDiv(mainText, subText, lastDiv);
+      }
+    } else {
+      
+      await updateLastInterruption(
+        logsColRef, lastDocRef, location, getLastDivByLocation(location)
+      );
+    }
+
+    updateUI(button, timerEl, isOn ? "ON" : "OFF", nowISO, onBtnEl, offBtnEl, location);
+    fetchLogs();
+  }
+
+  function updateUI(button, timerEl, state, time, onBtnEl, offBtnEl, location) {
+    animateButton(button, state);
+    const isSpecial = (location === "Katakhali" || location === "Miapur" || location === "City Central");
+    const holder = timerIntervals[location];
+
+    if (state === "ON") {
+      button.style.backgroundColor = "green";
+      button.style.color = "white";
+      onBtnEl.disabled = true;
+      offBtnEl.disabled = false;
+      if (isSpecial) startTimerDays(timerEl, new Date(time), holder);
+      else stopTimer(timerEl, holder, "00:00:00");
+    } else {
+      button.style.backgroundColor = "red";
+      button.style.color = "white";
+      onBtnEl.disabled = false;
+      offBtnEl.disabled = true;
+      if (isSpecial) {
+       
+        stopTimer(timerEl, holder, "00:00:00:00");
+      } else {
+        startTimer(timerEl, new Date(time), holder);
+      }
+    }
+  }
+
+  async function fetchLogs() {
+    
+    const snapshots = await Promise.all(Object.values(logsCols).map(col => col.orderBy('timestamp').get()));
+
+   
+    const allLogs = [];
+    snapshots.forEach((snap, idx) => {
+      const location = stations[idx].name;
+      snap.docs.forEach(d => allLogs.push({ ...d.data(), location }));
+    });
+
+    allLogs.sort((a,b)=> new Date(a.timestamp)-new Date(b.timestamp));
+
+    logTable.innerHTML = '';
+
+    let lastOff = {};
+    let lastOnSpecial = {};
+
+    allLogs.forEach(data=>{
+      let interruptionTime='--';
+
+      if (data.action === "ON") {
+        const isSpecial = (data.location==="Katakhali"||data.location==="Miapur"||data.location==="City Central");
+        const lastOffAction = lastOff[data.location];
+
+        if (!isSpecial && lastOffAction) {
+          const offTime = new Date(lastOffAction.timestamp);
+          const onTime = new Date(data.timestamp);
+          const diffMs = onTime - offTime;
+          if (diffMs>=0) {
+            const h=String(Math.floor(diffMs/3600000)).padStart(2,'0');
+            const m=String(Math.floor((diffMs%3600000)/60000)).padStart(2,'0');
+            const s=String(Math.floor((diffMs%60000)/1000)).padStart(2,'0');
+            interruptionTime = `${h}:${m}:${s}`;
+          }
+        }
+        if (data.location==="Katakhali") lastOnSpecial.Katakhali=data;
+        else if (data.location==="Miapur") lastOnSpecial.Miapur=data;
+        else if (data.location==="City Central") lastOnSpecial.CityCentral=data;
+      }
+
+      if (data.action==="OFF" && (data.location==="Katakhali"||data.location==="Miapur"||data.location==="City Central")) {
+        const lastOnAction = data.location==="Katakhali"?lastOnSpecial.Katakhali:
+                             data.location==="Miapur"?lastOnSpecial.Miapur:lastOnSpecial.CityCentral;
+        if (lastOnAction) {
+          const diffMs = new Date(data.timestamp) - new Date(lastOnAction.timestamp);
+          if (diffMs>=0) interruptionTime = formatDHMS(diffMs);
+        }
+      }
+
+      if (data.action==="OFF") {
+        lastOff[data.location] = data;
+      }
+
+      const logDate = new Date(data.timestamp);
+      const dateFormatted = logDate.toLocaleDateString('en-GB');
+      const timeFormatted = logDate.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${dateFormatted}</td>
+        <td>${data.action}</td>
+        <td>${timeFormatted}</td>
+        <td>${data.location}</td>
+        <td>${interruptionTime}</td>
+      `;
+      logTable.prepend(row);
+    });
+  }
+
+  
+  async function updateLastInterruption(logsColRef, lastInterruptionDocRef, location, lastDiv) {
+    const snapshot = await logsColRef.orderBy('timestamp','desc').limit(2).get();
+    const logs = snapshot.docs.map(doc=>doc.data());
+    if (logs.length===2 && logs[0].action==="ON" && logs[1].action==="OFF") {
+      const onTime = new Date(logs[0].timestamp);
+      const offTime = new Date(logs[1].timestamp);
+      const diffMs = onTime - offTime;
+      const h = String(Math.floor(diffMs/3600000)).padStart(2,'0');
+      const m = String(Math.floor((diffMs%3600000)/60000)).padStart(2,'0');
+      const s = String(Math.floor((diffMs%60000)/1000)).padStart(2,'0');
+
+      const timeStr = onTime.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:true}).replace('am','AM').replace('pm','PM');
+      const dateStr = onTime.toLocaleDateString([], {year:'numeric',month:'long',day:'numeric'});
+
+      const mainText = `Last Interruption: ${h}:${m}:${s} at ${timeStr}`;
+      const subText = `${dateStr}`;
+      await lastInterruptionDocRef.set({ mainText, subText });
+      renderLastDiv(mainText, subText, lastDiv);
+    }
+  }
+
+  async function fetchCurrentStatus(statusDocRef, button, timerEl, onBtnEl, offBtnEl, location) {
+    const doc = await statusDocRef.get();
+    if (doc.exists) {
+      const data = doc.data();
+      if (data.currentStatus === "ON") {
+        updateUI(button, timerEl, "ON", data.f_on, onBtnEl, offBtnEl, location);
+      } else if (data.currentStatus === "OFF") {
+        updateUI(button, timerEl, "OFF", data.f_off, onBtnEl, offBtnEl, location);
+        
+        if (location==="Katakhali"||location==="Miapur"||location==="City Central") {
+          const holder = timerIntervals[location];
+          stopTimer(timerEl, holder, "00:00:00:00");
+        }
+      }
+    }
+  }
+
+  async function fetchLastInterruption(lastInterruptionDocRef, lastDiv) {
+    const doc = await lastInterruptionDocRef.get();
+    if (doc.exists) {
+      const data = doc.data();
+      if (data.mainText && data.subText) {
+        renderLastDiv(data.mainText, data.subText, lastDiv);
+      } else {
+        lastDiv.textContent = "Last Interruption: --";
+      }
+    }
+  }
+
+  
+  stations.forEach((s) => {
+    const statusDocRef = statusDocs[s.name];
+    const logsColRef = logsCols[s.name];
+    const lastDocRef = lastDocs[s.name];
+    const el = elems[s.name];
+
+    el.onBtn.onclick = () => handleButtonClick(statusDocRef, logsColRef, s.name, el.statusBtn, el.timer, el.onBtn, el.offBtn, lastDocRef, true);
+    el.offBtn.onclick = () => handleButtonClick(statusDocRef, logsColRef, s.name, el.statusBtn, el.timer, el.onBtn, el.offBtn, lastDocRef, false);
+  });
+
+  let generatedExcelBlob = null;  
+
+  
+  downloadBtn.onclick = async () => {
+    loadingText.style.display = 'block';
+
+    let lastOff = {};
+    let lastOnSpecial = {};
+
+    try {
+      
+      const snapshots = await Promise.all(stations.map(s => logsCols[s.name].orderBy('timestamp').get()));
+
+      const allLogs = [];
+      snapshots.forEach((snap, idx) => {
+        const location = stations[idx].name;
+        snap.docs.forEach(doc => allLogs.push({ ...doc.data(), location }));
+      });
+
+      allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+      const logsForExcel = allLogs.map(data => {
+        const logDate = new Date(data.timestamp);
+        const dateFormatted = logDate.toLocaleDateString('en-GB');
+        const timeFormatted = logDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+
+        let interruptionTime = '--';
+
+        if (data.action === "ON") {
+          const lastOffAction = lastOff[data.location];
+          if (lastOffAction) {
+            const offTime = new Date(lastOffAction.timestamp);
+            const onTime = new Date(data.timestamp);
+            const diffMs = onTime - offTime;
+            if (diffMs >= 0) {
+              const h = String(Math.floor(diffMs / 3600000)).padStart(2, '0');
+              const m = String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0');
+              const s = String(Math.floor((diffMs % 60000) / 1000)).padStart(2, '0');
+              interruptionTime = `${h}:${m}:${s}`;
+            }
+          }
+        }
+
+        if (data.action === "OFF" && (data.location === "Katakhali" || data.location === "Miapur" || data.location === "City Central")) {
+          const lastOnAction = data.location === "Katakhali" ? lastOnSpecial.Katakhali : data.location === "Miapur" ? lastOnSpecial.Miapur : lastOnSpecial.CityCentral;
+          if (lastOnAction) {
+            const onTime = new Date(lastOnAction.timestamp);
+            const offTime = new Date(data.timestamp);
+            const diffMs = offTime - onTime;
+            if (diffMs >= 0) {
+              interruptionTime = formatDHMS(diffMs);
+            }
+          }
+        }
+
+        if (data.action === "OFF") {
+          lastOff[data.location] = data;
+        } else if (data.action === "ON") {
+          if (data.location === "Katakhali") lastOnSpecial.Katakhali = data;
+          else if (data.location === "Miapur") lastOnSpecial.Miapur = data;
+          else if (data.location === "City Central") lastOnSpecial.CityCentral = data;
+        }
+
+        return {
+          Date: dateFormatted,
+          Action: data.action,
+          Time: timeFormatted,
+          Location: data.location,
+          Interruption: interruptionTime
+        };
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(logsForExcel);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
+
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      generatedExcelBlob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+
+      const currentDate = new Date();
+      const day = String(currentDate.getDate()).padStart(2, '0');
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const year = currentDate.getFullYear();
+      let hours = currentDate.getHours();
+      const minutes = String(currentDate.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'pm' : 'am';
+      hours = hours % 12;
+      hours = hours ? String(hours).padStart(2, '0') : '12';
+      const formattedDateTime = `${day}.${month}.${year}_${hours}.${minutes}${ampm}.xlsx`;
+
+      XLSX.writeFile(workbook, formattedDateTime);
+
+    } catch (error) {
+      console.error('Error downloading logs:', error);
+      alert('Error downloading logs. See console for details.');
+    } finally {
+      loadingText.style.display = 'none';
+    }
+  };
+
+  
+  fetchLogs();
+  stations.forEach(s => fetchCurrentStatus(statusDocs[s.name], elems[s.name].statusBtn, elems[s.name].timer, elems[s.name].onBtn, elems[s.name].offBtn, s.name));
+  stations.forEach(s => fetchLastInterruption(lastDocs[s.name], elems[s.name].lastDiv));
+
+ 
+  document.getElementById('resetButton').addEventListener('click', async () => {
+    const password = prompt("Enter the password:");
+
+    if (password === "rst") {
+      try {
+        const collections = stations.map(s => s.logsCol);
+
+        const deletePromises = collections.map(async (collection) => {
+          const logsSnapshot = await db.collection(collection).get();
+
+          if (logsSnapshot.empty) {
+            console.log(`${collection} has no logs to delete.`);
+            return;
+          }
+
+          const batch = db.batch();
+          logsSnapshot.docs.forEach((doc) => {
+            batch.delete(doc.ref);
+          });
+
+          await batch.commit();
+          console.log(`${collection} logs deleted.`);
+        });
+
+        await Promise.all(deletePromises);
+
+        const logTableBody = document.querySelector('#logTable tbody');
+        logTableBody.innerHTML = '';
+
+        alert('All logs from all collections have been deleted.');
+
+        location.reload();
+      } catch (error) {
+        console.error('Error resetting logs:', error);
+        alert('An error occurred while resetting logs.');
+      }
+    } else {
+      alert("Incorrect password. Logs will not be reset.");
+    }
+  });
+
+</script>
+
+</div>
+
+</body>
+</html>
